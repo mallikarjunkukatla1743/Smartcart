@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid px-lg-5 mt-4">
+    <!-- Page Header -->
+    <div class="row mb-5">
+        <div class="col-12 text-center py-4 bg-white shadow-sm rounded-4 border-light border">
+            <h1 class="fw-800 mb-2">Our <span class="text-primary">Products</span></h1>
+            <p class="text-muted mb-0">Explore our curated collection of high-quality items just for you.</p>
+
+            {% if request.args.get('search') or request.args.get('category') %}
+            <div class="mt-3">
+                <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill">
+                    Showing results for:
+                    {% if request.args.get('search') %}"{{ request.args.get('search') }}"{% endif %}
+                    {% if request.args.get('category') %}({{ request.args.get('category') }}){% endif %}
+                </span>
+                <a href="{{ url_for('user.user_products') }}" class="ms-2 text-muted small text-decoration-none">Clear
+                    Filters</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+
+    <!-- Product Grid -->
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-3 g-md-4">
+        {% for product in products %}
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm product-card transition-all">
+                <div class="position-relative overflow-hidden group">
+                    <img src="/static/uploads/product_images/{{ product.image }}" class="card-img-top p-4"
+                        style="height: 180px; object-fit: contain; transition: transform 0.5s ease;"
+                        alt="{{ product.name }}">
+                </div>
+                <div class="card-body p-3 d-flex flex-column text-center">
+                    <h6 class="fw-bold mb-1 text-dark text-truncate">{{ product.name }}</h6>
+                    <span class="badge bg-light text-secondary mb-3 align-self-center small">{{ product.category
+                        }}</span>
+                    <div class="mt-auto">
+                        <h5 class="text-primary fw-800 mb-3">₹{{ '{:,.0f}'.format(product.price) }}</h5>
+                        <button onclick="addToCart({{ product.product_id }})"
+                            class="btn btn-primary w-100 rounded-pill btn-sm fw-bold py-2 shadow-sm-hover mb-2">
+                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                        </button>
+                        <a href="{{ url_for('user.user_product_details', product_id=product.product_id) }}"
+                            class="btn btn-outline-primary w-100 rounded-pill btn-sm fw-bold py-2">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="empty-state">
+                <i class="bi bi-cart-x text-muted opacity-25 display-1"></i>
+                <h4 class="mt-4 fw-bold">No items found</h4>
+                <p class="text-muted">We couldn't find any products matching your selection.</p>
+                <a href="{{ url_for('user.user_products') }}" class="btn btn-primary px-4 rounded-pill mt-3">Browser All
+                    Products</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #f8fafc;
+    }
+
+    .fw-800 {
+        font-weight: 800;
+    }
+
+    .bg-soft-primary {
+        background-color: #eff6ff;
+    }
+
+    .filter-pill {
+        padding: 8px 18px;
+        background: white;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+        border-radius: 100px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+
+    .filter-pill:hover {
+        border-color: #2563eb;
+        color: #2563eb;
+        background: #f0f7ff;
+    }
+
+    .filter-pill.active {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    .product-card {
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.03) !important;
+        background: white;
+    }
+
+    .product-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    .product-card:hover img {
+        transform: scale(1.1);
+    }
+
+    .product-overlay {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        opacity: 0;
+        transition: all 0.3s;
+        z-index: 10;
+    }
+
+    .product-card:hover .product-overlay {
+        opacity: 1;
+    }
+
+    .shadow-sm-hover:hover {
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+
+    .bg-soft-primary {
+        background-color: rgba(37, 99, 235, 0.1);
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 576px) {
+        .row-cols-2>.col {
+            padding: 6px;
+        }
+
+        .product-card {
+            border-radius: 15px;
+        }
+
+        .product-card .p-3 {
+            padding: 0.8rem !important;
+        }
+
+        .product-card img {
+            height: 130px !important;
+            padding: 1rem !important;
+        }
+
+        .product-card h6 {
+            font-size: 0.85rem;
+        }
+
+        .product-card h5 {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+{% endblock %}

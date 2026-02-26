@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h2 class="fw-bold mb-1">📦 My Orders</h2>
+                <p class="text-muted mb-0">Track and manage your recent purchases</p>
+            </div>
+            <a href="/user/products" class="btn btn-outline-primary fw-semibold" style="border-radius: 10px;">
+                <i class="bi bi-shop me-2"></i>Continue Shopping
+            </a>
+        </div>
+
+        {% if orders|length == 0 %}
+        <div class="card border-0 shadow-sm text-center py-5" style="border-radius: 20px; background-color: #f8fafc;">
+            <div class="card-body">
+                <div class="mb-4">
+                    <i class="bi bi-cart-x text-muted" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="fw-bold">No orders found</h4>
+                <p class="text-secondary pb-3">It looks like you haven't placed any orders yet.</p>
+                <a href="/user/products" class="btn btn-primary btn-lg px-5" style="border-radius: 12px;">
+                    Start Shopping Now
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="row g-4">
+            {% for order in orders %}
+            <div class="col-12">
+                <div class="card order-card border-0 shadow-sm overflow-hidden"
+                    style="border-radius: 18px; transition: transform 0.2s ease;">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-uppercase small text-muted fw-bold">Order ID</span>
+                                <h5 class="fw-bold mb-0">#{{ order.order_id }}</h5>
+                            </div>
+                            <div class="text-end">
+                                <span
+                                    class="badge {% if order.payment_status == 'paid' %}bg-soft-success text-success{% else %}bg-soft-warning text-warning{% endif %} px-3 py-2 rounded-pill">
+                                    <i class="bi bi-check-circle-fill me-1"></i> {{ order.payment_status|capitalize }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <div class="small text-muted mb-1">Placed On</div>
+                                <div class="fw-semibold text-dark">{{ order.created_at.strftime('%d %b, %Y') if
+                                    order.created_at else 'N/A' }}</div>
+                                <div class="small text-muted mt-2">Shipping Address</div>
+                                <div class="small text-dark text-truncate" style="max-width: 180px;"
+                                    title="{{ order.shipping_address }}">
+                                    {{ order.shipping_address if order.shipping_address else 'N/A' }}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="small text-muted mb-1">Total Amount</div>
+                                <div class="fw-bold text-primary h5 mb-0">₹{{ order.amount }}</div>
+                            </div>
+                            <div class="col-md-6 mt-3 mt-md-0">
+                                <div class="d-flex gap-2 justify-content-md-end">
+                                    <a href="{{ url_for('user.order_success', order_db_id=order.order_id) }}"
+                                        class="btn btn-light border btn-sm px-4 fw-bold" style="border-radius: 8px;">
+                                        <i class="bi bi-eye me-1"></i> Details
+                                    </a>
+                                    <a href="{{ url_for('user.download_invoice', order_id=order.order_id) }}"
+                                        class="btn btn-primary btn-sm px-4 fw-bold shadow-sm"
+                                        style="border-radius: 8px;">
+                                        <i class="bi bi-download me-1"></i> Invoice
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .order-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .bg-soft-success {
+        background-color: rgba(34, 197, 94, 0.1);
+    }
+
+    .bg-soft-warning {
+        background-color: rgba(234, 179, 8, 0.1);
+    }
+</style>
+{% endblock %}

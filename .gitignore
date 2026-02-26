@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+venv/
+.vscode/
+static/uploads/*
+!static/uploads/.gitkeep
+smartcart.db

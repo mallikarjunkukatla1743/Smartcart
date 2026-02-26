@@ -1,0 +1,181 @@
+body {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+}
+
+nav a {
+    color: white;
+    margin-right: 15px;
+    text-decoration: none;
+}
+
+button {
+    background: green;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+footer{
+        background: #2c3e50;
+    color: white;
+    padding: 15px;
+}
+
+/* Centering Container */
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh; /* Adjusts based on your navbar height */
+    padding: 20px;
+}
+
+/* Form Card Styling */
+.form-card {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Modern Form Layout */
+.form-card h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.form-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form-card input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+    box-sizing: border-box; /* Prevents input from overflowing */
+}
+
+.form-card button {
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.form-card button:hover {
+    background-color: #0056b3;
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 15px;
+}
+
+:root {
+    --primary: #2563eb;
+    --secondary: #64748b;
+    --success: #22c55e;
+    --background: #f8fafc;
+    --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+body {
+    background-color: var(--background);
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+}
+
+/* Auth Pages (Login/Register) */
+.auth-container {
+    max-width: 400px;
+    margin: 80px auto;
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+}
+
+/* Product Grid */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem 0;
+}
+
+.product-card {
+    background: white;
+    border: none;
+    border-radius: 12px;
+    transition: transform 0.2s;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+}
+
+.product-image-wrapper {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    padding: 1rem;
+}
+
+.product-image-wrapper img {
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Buttons */
+.btn-primary { background-color: var(--primary); border: none; }
+.btn-primary:hover { background-color: #1d4ed8; }
+
+
+/* Container Background */
+body {
+    background-color: #f4f7f6; /* Soft grey to make cards pop */
+}
+
+/* Card Styling */
+.card {
+    border-radius: 12px;
+}
+
+.list-group-item {
+    padding: 1rem 1.25rem;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* Make images look consistent */
+img.rounded {
+    object-fit: cover;
+    border: 1px solid #eee;
+}

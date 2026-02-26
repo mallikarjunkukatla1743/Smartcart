@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-container">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Verify OTP</h2>
+        <p class="text-muted">Enter the 6-digit code sent to your email</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category if category != 'message' else 'info' }} py-2 small">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="mb-4">
+            <label class="form-label small fw-bold">Enter OTP</label>
+            <input type="text" name="otp" class="form-control text-center fw-bold fs-4" placeholder="000000"
+                maxlength="6" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2">Verify OTP</button>
+    </form>
+
+    <div class="text-center mt-4">
+        <p class="small text-muted">Didn't receive code? <a href="/forgot-password"
+                class="text-primary text-decoration-none">Resend</a></p>
+    </div>
+</div>
+{% endblock %}

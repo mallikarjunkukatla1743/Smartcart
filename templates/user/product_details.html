@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-4 py-md-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-11 col-xl-10">
+            <div class="card border-0 shadow-lg detail-card overflow-hidden">
+                <div class="row g-0">
+                    <!-- Product Image Column -->
+                    <div class="col-md-6 image-side d-flex align-items-center justify-content-center p-4 p-lg-5">
+                        <div class="image-wrapper position-relative text-center">
+                            <img src="/static/uploads/product_images/{{ product.image }}"
+                                class="img-fluid rounded-3 main-product-image" alt="{{ product.name }}">
+                            <div class="zoom-hint d-none d-md-block">
+                                <i class="bi bi-zoom-in me-1"></i> Hover to zoom
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Content Column -->
+                    <div class="col-md-6 content-side p-4 p-lg-5 d-flex flex-column">
+                        <nav aria-label="breadcrumb" class="mb-4 d-none d-md-block">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a href="/user/products"
+                                        class="text-decoration-none text-muted">Products</a></li>
+                                <li class="breadcrumb-item"><a href="/user/products?category={{ product.category }}"
+                                        class="text-decoration-none text-muted">{{ product.category }}</a></li>
+                                <li class="breadcrumb-item active fw-semibold text-primary" aria-current="page">{{
+                                    product.name }}</li>
+                            </ol>
+                        </nav>
+
+                        <!-- Back Button -->
+                        <div class="mb-3">
+                            <a href="/user/products"
+                                class="btn btn-link text-muted p-0 text-decoration-none small fw-bold">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Products
+                            </a>
+                        </div>
+
+                        <div class="mb-2">
+                            <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill small fw-bold">
+                                {{ product.category }}
+                            </span>
+                        </div>
+
+                        <h1 class="display-6 fw-800 text-dark mb-3">{{ product.name }}</h1>
+
+                        <div class="price-section mb-4 d-flex align-items-baseline gap-2">
+                            <h2 class="text-primary fw-800 mb-0">₹{{ '{:,.0f}'.format(product.price) }}</h2>
+                            <span class="text-muted small">M.R.P. <s>₹{{ '{:,.0f}'.format(product.price|float * 1.2)
+                                    }}</s></span>
+                        </div>
+
+                        <div class="description-section mb-5">
+                            <h6 class="text-uppercase fw-bold text-muted small ls-1 mb-3">Product Description</h6>
+                            <p class="text-secondary leading-relaxed mb-0" style="font-size: 1.05rem;">
+                                {{ product.description if product.description else "Elevate your daily routine with this
+                                premium " + product.name + ". Designed for both style and performance, it offers
+                                exceptional quality you can feel." }}
+                            </p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-auto action-buttons-group">
+                            <div class="row g-3">
+                                <div class="col-sm-6 text-center">
+                                    <button onclick="addToCart({{ product.product_id }})"
+                                        class="btn btn-outline-primary btn-lg w-100 py-3 fw-bold detail-btn translate-y">
+                                        <i class="bi bi-cart-plus me-2"></i> Add to Cart
+                                    </button>
+                                </div>
+                                <div class="col-sm-6 text-center">
+                                    <a href="/user/buy-now/{{ product.product_id }}"
+                                        class="btn btn-primary btn-lg w-100 py-3 fw-bold detail-btn shadow-blue translate-y">
+                                        <i class="bi bi-lightning-fill me-2"></i> Buy Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trust Badges -->
+                        <div class="row g-3 mt-5 pt-4 border-top">
+                            <div class="col-4 text-center">
+                                <i class="bi bi-shield-check text-success fs-4 mb-1 d-block"></i>
+                                <span class="smaller fw-bold text-muted">Secure Payment</span>
+                            </div>
+                            <div class="col-4 text-center">
+                                <i class="bi bi-truck text-primary fs-4 mb-1 d-block"></i>
+                                <span class="smaller fw-bold text-muted">Fast Delivery</span>
+                            </div>
+                            <div class="col-4 text-center">
+                                <i class="bi bi-arrow-repeat text-dark fs-4 mb-1 d-block"></i>
+                                <span class="smaller fw-bold text-muted">Free Returns</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back navigation for mobile -->
+            <div class="text-center mt-4 d-md-none">
+                <a href="/user/products" class="text-decoration-none text-muted small">
+                    <i class="bi bi-chevron-left me-1"></i> Back to Products
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #f1f5f9;
+        min-height: 100vh;
+    }
+
+    .fw-800 {
+        font-weight: 800;
+    }
+
+    .ls-1 {
+        letter-spacing: 1px;
+    }
+
+    .smaller {
+        font-size: 0.75rem;
+    }
+
+    .detail-card {
+        border-radius: 30px;
+        background: white;
+    }
+
+    .image-side {
+        background-color: #fafafa;
+        min-height: 400px;
+    }
+
+    .main-product-image {
+        max-height: 450px;
+        transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+
+    .image-wrapper:hover .main-product-image {
+        transform: scale(1.08);
+    }
+
+    .zoom-hint {
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.8rem;
+        color: #94a3b8;
+        opacity: 0.7;
+    }
+
+    .breadcrumb-item+.breadcrumb-item::before {
+        content: "›";
+        font-size: 1.2rem;
+        line-height: 1;
+        vertical-align: sub;
+        color: #cbd5e1;
+    }
+
+    .bg-soft-primary {
+        background-color: #eff6ff;
+    }
+
+    .text-secondary {
+        color: #64748b !important;
+    }
+
+    .leading-relaxed {
+        line-height: 1.7;
+    }
+
+    .detail-btn {
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .translate-y:hover {
+        transform: translateY(-4px);
+    }
+
+    .shadow-blue:hover {
+        box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+    }
+
+    @media (max-width: 768px) {
+        .detail-card {
+            border-radius: 20px;
+        }
+
+        .image-side {
+            min-height: 300px;
+            padding: 2rem !important;
+        }
+
+        .content-side {
+            padding: 1.5rem !important;
+        }
+
+        .display-6 {
+            font-size: 1.75rem;
+        }
+    }
+</style>
+
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-800 mb-0">Shopping <span class="text-primary">Cart</span></h2>
+                <span class="text-muted fw-semibold">{{ products|length }} Items</span>
+            </div>
+
+            {% if not products %}
+            <div class="card border-0 shadow-sm text-center py-5 rounded-4 bg-white">
+                <div class="card-body">
+                    <div class="mb-4">
+                        <i class="bi bi-cart-x text-muted opacity-25" style="font-size: 5rem;"></i>
+                    </div>
+                    <h4 class="fw-bold">Your cart is empty</h4>
+                    <p class="text-secondary mb-4">Looks like you haven't added anything to your cart yet.</p>
+                    <a href="/user/products"
+                        class="btn btn-primary btn-lg rounded-pill px-5 shadow-blue transition-all">
+                        Start Shopping
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 py-3 text-uppercase smaller fw-800 text-muted ls-1">Product</th>
+                                <th class="py-3 text-uppercase smaller fw-800 text-muted ls-1">Price</th>
+                                <th class="py-3 text-uppercase smaller fw-800 text-muted ls-1 text-center">Quantity</th>
+                                <th class="py-3 text-uppercase smaller fw-800 text-muted ls-1 text-end pe-4">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in products %}
+                            <tr class="item-row">
+                                <td class="ps-4 py-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="position-relative">
+                                            <img src="/static/uploads/product_images/{{ p.image }}"
+                                                class="rounded-3 border border-light shadow-sm"
+                                                style="width: 70px; height: 70px; object-fit: contain; background: white;">
+                                            <a href="/user/remove_from_cart/{{ p.product_id }}"
+                                                class="position-absolute top-0 start-0 translate-middle badge rounded-circle bg-danger border border-white p-1 remove-icon-overlay"
+                                                title="Remove item">
+                                                <i class="bi bi-x-lg smaller"></i>
+                                            </a>
+                                        </div>
+                                        <div class="ms-3">
+                                            <h6 class="fw-bold mb-0">{{ p.name }}</h6>
+                                            <span class="smaller text-muted">SKU: #{{ p.product_id }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 fw-semibold text-dark">₹{{ '{:,.0f}'.format(p.price) }}</td>
+                                <td class="py-4">
+                                    <div class="d-flex justify-content-center">
+                                        <div class="qty-control d-flex align-items-center bg-light rounded-pill p-1">
+                                            <a href="/user/decrease_quantity/{{ p.product_id }}"
+                                                class="btn btn-icon rounded-circle shadow-none">
+                                                <i class="bi bi-dash"></i>
+                                            </a>
+                                            <span class="mx-3 fw-bold">{{ p.quantity }}</span>
+                                            <a href="/user/increase_quantity/{{ p.product_id }}"
+                                                class="btn btn-icon rounded-circle shadow-none">
+                                                <i class="bi bi-plus"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 text-end pe-4">
+                                    <span class="fw-bold text-primary">₹{{ '{:,.0f}'.format(p.subtotal)
+                                        }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <a href="/user/products" class="btn btn-link text-muted text-decoration-none fw-semibold">
+                <i class="bi bi-arrow-left me-2"></i> Continue Shopping
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Order Summary -->
+        {% if products %}
+        <div class="col-lg-4 mt-5 mt-lg-0">
+            <div class="card border-0 shadow-lg rounded-4 p-4 sticky-top" style="top: 100px; z-index: 10;">
+                <h4 class="fw-800 mb-4">Order Summary</h4>
+
+                <div class="d-flex justify-content-between mb-3 text-secondary">
+                    <span>Subtotal</span>
+                    <span class="fw-semibold">₹{{ '{:,.0f}'.format(total) }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3 text-secondary">
+                    <span>Shipping</span>
+                    <span class="text-success fw-semibold">FREE</span>
+                </div>
+                <div class="d-flex justify-content-between mb-4 text-secondary">
+                    <span>Estimated Tax</span>
+                    <span class="fw-semibold">₹0.00</span>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-between mb-5 align-items-center">
+                    <h5 class="fw-800 mb-0 text-dark">Total Amount</h5>
+                    <h3 class="fw-800 mb-0 text-primary">₹{{ '{:,.0f}'.format(total) }}</h3>
+                </div>
+
+                <a href="/user/address"
+                    class="btn btn-primary btn-lg w-100 rounded-pill py-3 fw-bold shadow-blue transition-all">
+                    Checkout Now <i class="bi bi-arrow-right-circle ms-2"></i>
+                </a>
+
+                <div class="mt-4 text-center">
+                    <p class="smaller text-muted mb-0"><i class="bi bi-shield-lock me-1"></i> Secure and Encrypted
+                        Checkout</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #f1f5f9;
+    }
+
+    .fw-800 {
+        font-weight: 800;
+    }
+
+    .ls-1 {
+        letter-spacing: 1px;
+    }
+
+    .smaller {
+        font-size: 0.75rem;
+    }
+
+    .card {
+        background: white;
+    }
+
+    .item-row:hover {
+        background-color: #fafafa;
+    }
+
+    .remove-icon-overlay {
+        opacity: 0;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .position-relative:hover .remove-icon-overlay {
+        opacity: 1;
+    }
+
+    .qty-control {
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-icon {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s;
+        color: #64748b;
+    }
+
+    .btn-icon:hover {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+    }
+
+    .shadow-blue:hover {
+        box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+
+    @media (max-width: 991px) {
+        .sticky-top {
+            position: static;
+        }
+    }
+</style>
+{% endblock %}

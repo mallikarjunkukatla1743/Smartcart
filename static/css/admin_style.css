@@ -1,0 +1,155 @@
+/* Admin Dashboard Styles */
+:root {
+    --admin-primary: #1e293b;
+    --admin-secondary: #334155;
+    --admin-accent: #3b82f6;
+    --admin-bg: #f1f5f9;
+    --admin-sidebar-width: 260px;
+}
+
+body {
+    background-color: var(--admin-bg);
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s;
+}
+
+/* Sidebar styling */
+.sidebar {
+    width: var(--admin-sidebar-width);
+    height: 100vh;
+    background-color: var(--admin-primary);
+    position: fixed;
+    top: 0;
+    left: 0;
+    color: white;
+    padding-top: 20px;
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out;
+}
+
+.main-content {
+    margin-left: var(--admin-sidebar-width);
+    padding: 30px;
+    transition: margin 0.3s ease-in-out;
+}
+
+.admin-nav-link {
+    display: block;
+    padding: 12px 20px;
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.admin-nav-link:hover {
+    background-color: var(--admin-secondary);
+    color: white;
+}
+
+.admin-nav-link.active {
+    background-color: var(--admin-accent);
+    color: white;
+}
+
+.admin-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.admin-table th {
+    background-color: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* Responsive Sidebar */
+@media (max-width: 991.98px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 15px;
+    }
+}
+
+/* Mobile Header */
+.admin-mobile-header {
+    display: none;
+    background: white;
+    padding: 10px 15px;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+
+@media (max-width: 991.98px) {
+    .admin-mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
+/* Utilities */
+.object-fit-cover {
+    object-fit: cover;
+}
+
+/* Avatar Placeholder Styles */
+.avatar-placeholder {
+    background-color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    border-radius: 50%;
+}
+
+.inventory-img-placeholder {
+    width: 50px;
+    height: 50px;
+    background-color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    border-radius: 4px;
+    border: 1px dashed #cbd5e1;
+}
+
+/* Tablet and below adjustments */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 10px;
+    }
+
+    .admin-card {
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    .table thead {
+        display: none;
+        /* Hide headers on very small mobile for a card-like view if needed, but for now we rely on table-responsive */
+    }
+}
+
+.table-responsive {
+    border-radius: 8px;
+}
+
+.btn-group .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card shadow-lg border-0 profile-card overflow-hidden">
+                <!-- Header with Gradient -->
+                <div class="profile-header py-5 text-center text-white">
+                    <div class="avatar-wrapper mb-3 shadow">
+                        <i class="bi bi-person-fill display-4"></i>
+                    </div>
+                    <h3 class="fw-800 mb-1">Account Settings</h3>
+                    <p class="opacity-75 mb-0 small text-uppercase ls-1">Mallikarjun, manage your info</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form action="/user/profile" method="POST">
+                        <div class="mb-4">
+                            <label for="name" class="form-label small fw-800 text-muted text-uppercase mb-2">Full
+                                Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i
+                                        class="bi bi-person text-primary"></i></span>
+                                <input type="text" class="form-control bg-light border-start-0 py-2 ps-0" id="name"
+                                    name="name" value="{{ user.name }}" required style="border-radius: 0 10px 10px 0;">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="email" class="form-label small fw-800 text-muted text-uppercase mb-2">Email
+                                Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i
+                                        class="bi bi-envelope text-primary"></i></span>
+                                <input type="email" class="form-control bg-light border-start-0 py-2 ps-0" id="email"
+                                    name="email" value="{{ user.email }}" required
+                                    style="border-radius: 0 10px 10px 0;">
+                            </div>
+                        </div>
+
+                        <div class="mb-4 pt-2 border-top">
+                            <label for="password"
+                                class="form-label small fw-800 text-muted text-uppercase mt-3 mb-2">Update
+                                Password</label>
+                            <p class="smaller text-muted mb-3"><i class="bi bi-info-circle me-1"></i> Leave blank if you
+                                don't want to change it</p>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i
+                                        class="bi bi-shield-lock text-primary"></i></span>
+                                <input type="password" class="form-control bg-light border-start-0 py-2 ps-0"
+                                    id="password" name="password" placeholder="New password (optional)"
+                                    style="border-radius: 0 10px 10px 0;">
+                            </div>
+                        </div>
+
+                        <div class="d-grid mt-5">
+                            <button type="submit"
+                                class="btn btn-primary btn-lg rounded-pill fw-bold shadow-blue py-3 transition-all">
+                                <i class="bi bi-check2-circle me-2"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('user.user_dashboard') }}"
+                            class="btn btn-link link-secondary text-decoration-none small">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #f1f5f9;
+    }
+
+    .fw-800 {
+        font-weight: 800;
+    }
+
+    .ls-1 {
+        letter-spacing: 1px;
+    }
+
+    .profile-card {
+        border-radius: 24px;
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    }
+
+    .avatar-wrapper {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(5px);
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .input-group-text {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px 0 0 10px !important;
+    }
+
+    .form-control {
+        border: 1px solid #e2e8f0;
+        box-shadow: none !important;
+    }
+
+    .form-control:focus {
+        background-color: #fff !important;
+        border-color: #2563eb !important;
+    }
+
+    .shadow-blue:hover {
+        box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}

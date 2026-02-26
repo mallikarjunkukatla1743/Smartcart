@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="mb-4 text-center fw-bold">Shipping Address</h2>
+
+            {% if saved_addresses %}
+            <div class="card shadow-lg border-0 mb-5" style="border-radius: 20px;">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4 fw-bold text-primary"><i
+                            class="bi bi-journal-bookmark-fill me-2"></i>Choose Saved Address</h5>
+                    <form method="POST">
+                        <div class="row g-3">
+                            {% for addr in saved_addresses %}
+                            <div class="col-md-6">
+                                <label class="address-selector-card w-100 mb-0">
+                                    <input type="radio" name="address_id" value="{{ addr.address_id }}" {% if loop.first
+                                        %}checked{% endif %} class="d-none">
+                                    <div class="card h-100 border-2 transition-all"
+                                        style="border-radius: 12px; cursor: pointer;">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h6 class="fw-bold mb-0">{{ addr.full_name }}</h6>
+                                                <div class="d-flex align-items-center">
+                                                    <a href="{{ url_for('user.delete_address', address_id=addr.address_id) }}"
+                                                        class="text-danger me-2"
+                                                        onclick="event.stopPropagation(); return confirm('Permanently delete this address?')">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </a>
+                                                    <div class="selection-indicator">
+                                                        <i class="bi bi-check-circle-fill text-primary d-none"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="small text-muted mb-2 lh-sm">
+                                                {{ addr.address_line }}<br>
+                                                {{ addr.city }}, {{ addr.state }} - {{ addr.pincode }}
+                                            </p>
+                                            <div class="small fw-semibold text-secondary">
+                                                <i class="bi bi-telephone-fill me-1"></i> {{ addr.phone }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mt-4 shadow-sm py-3 fw-bold"
+                            style="border-radius: 12px;">
+                            Deliver to Selected Address <i class="bi bi-arrow-right-circle ms-2"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mb-4">
+                <hr class="d-inline-block w-25"> <span class="mx-3 text-muted fw-bold">OR</span>
+                <hr class="d-inline-block w-25">
+            </div>
+            {% endif %}
+
+            <div class="card shadow-lg border-0" style="border-radius: 20px;">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4 fw-bold text-primary"><i class="bi bi-plus-circle-fill me-2"></i>Add New
+                        Address</h5>
+                    <form method="POST">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Full Name</label>
+                                <input type="text" name="full_name" class="form-control form-control-lg bg-light"
+                                    placeholder="Receiver's Name" required style="border-radius: 10px;">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Phone Number</label>
+                                <input type="text" name="phone" class="form-control form-control-lg bg-light"
+                                    placeholder="10-digit mobile number" required style="border-radius: 10px;">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Pincode</label>
+                                <input type="text" name="pincode" class="form-control form-control-lg bg-light"
+                                    placeholder="6-digit PIN" required style="border-radius: 10px;">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Address Line</label>
+                                <input type="text" name="address_line" class="form-control form-control-lg bg-light"
+                                    placeholder="Flat, House no., Building, Street" required
+                                    style="border-radius: 10px;">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">City</label>
+                                <input type="text" name="city" class="form-control form-control-lg bg-light"
+                                    placeholder="City Name" required style="border-radius: 10px;">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">State</label>
+                                <input type="text" name="state" class="form-control form-control-lg bg-light"
+                                    placeholder="State Name" required style="border-radius: 10px;">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary btn-lg w-100 mt-4 py-3 fw-bold"
+                            style="border-radius: 12px;">
+                            Save & Proceed to Payment <i class="bi bi-credit-card ms-2"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .address-selector-card input:checked+.card {
+        border-color: #0d6efd !important;
+        background-color: #f0f7ff;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(13, 110, 253, 0.1);
+    }
+
+    .address-selector-card input:checked+.card .selection-indicator .bi-check-circle-fill {
+        display: block !important;
+    }
+
+    .text-danger i {
+        transition: transform 0.2s ease;
+    }
+
+    .text-danger:hover i {
+        transform: scale(1.2);
+    }
+
+    .form-control:focus {
+        background-color: #fff !important;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+    }
+</style>
+{% endblock %}

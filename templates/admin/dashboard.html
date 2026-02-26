@@ -1,0 +1,324 @@
+{% extends "admin/admin_base.html" %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+{% if is_super %}
+<!-- SUPER ADMIN VIEW: ACCOUNT MANAGEMENT -->
+
+{% if pending_admins %}
+<!-- 1. Pending Signup Requests -->
+<div class="admin-card mb-4 border-warning border-start border-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0 text-warning"><i class="bi bi-person-exclamation me-2"></i>Pending Signup Requests</h4>
+        <span class="badge bg-warning text-dark">{{ pending_admins|length }} Request(s)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Date</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p_admin in pending_admins %}
+                <tr>
+                    <td class="fw-bold">{{ p_admin.name }}</td>
+                    <td>{{ p_admin.email }}</td>
+                    <td><small class="text-muted">{{ p_admin.created_at.strftime('%d %b, %H:%M') if p_admin.created_at
+                            else 'N/A' }}</small></td>
+                    <td class="text-end">
+                        <a href="{{ url_for('admin.approve_admin', t_admin_id=p_admin.admin_id) }}"
+                            class="btn btn-sm btn-success me-2">
+                            <i class="bi bi-check-lg"></i> Approve
+                        </a>
+                        <a href="{{ url_for('admin.confirm_delete_admin', t_admin_id=p_admin.admin_id) }}"
+                            class="btn btn-sm btn-danger" onclick="return confirm('Reject this signup?')">
+                            <i class="bi bi-x-lg"></i> Reject
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% set del_reqs = [] %}
+{% for adm in all_admins %}
+{% if adm.deletion_requested %}
+{% set _ = del_reqs.append(adm) %}
+{% endif %}
+{% endfor %}
+
+{% if del_reqs %}
+<!-- 2. Account Deletion Requests -->
+<div class="admin-card mb-4 border-danger border-start border-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0 text-danger"><i class="bi bi-trash-fill me-2"></i>Account Deletion Requests</h4>
+        <span class="badge bg-danger text-white">{{ del_reqs|length }} Request(s)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Admin Name</th>
+                    <th>Email</th>
+                    <th>Inventory Size</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d_admin in del_reqs %}
+                <tr>
+                    <td class="fw-bold">{{ d_admin.name }}</td>
+                    <td>{{ d_admin.email }}</td>
+                    <td>{{ d_admin.prod_count }} Products</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('admin.confirm_delete_admin', t_admin_id=d_admin.admin_id) }}"
+                            class="btn btn-sm btn-danger me-2"
+                            onclick="return confirm('CRITICAL: This will permanently delete this admin and ALL their products. Proceed?')">
+                            <i class="bi bi-check-circle"></i> Confirm Deletion
+                        </a>
+                        <a href="{{ url_for('admin.reject_delete_request', t_admin_id=d_admin.admin_id) }}"
+                            class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Deny
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 3. All Administrators Overview -->
+<div class="admin-card mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <h4 class="fw-bold mb-0">Platform Administrators</h4>
+
+        <!-- Search & Filter Form -->
+        <form method="GET" action="{{ url_for('admin.admin_dashboard') }}" class="d-flex gap-2">
+            <input type="hidden" name="aid" value="{{ session.get('admin_id') }}">
+            <div class="input-group input-group-sm">
+                <input type="text" name="search_admin" class="form-control" placeholder="Search by name/email..."
+                    value="{{ request.args.get('search_admin', '') }}" style="min-width: 200px;">
+                <select name="status_filter" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="active" {% if request.args.get('status_filter')=='active' %}selected{% endif %}>
+                        Active</option>
+                    <option value="pending" {% if request.args.get('status_filter')=='pending' %}selected{% endif %}>
+                        Pending</option>
+                </select>
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+                {% if request.args.get('search_admin') or request.args.get('status_filter') %}
+                <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="bg-light">
+                <tr>
+                    <th>Administrator</th>
+                    <th>Status</th>
+                    <th>Last Login</th>
+                    <th>Products</th>
+                    <th>Total Revenue</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for adm in all_admins %}
+                <tr>
+                    <td>
+                        <div class="fw-bold">{{ adm.name }}</div>
+                        <small class="text-muted">{{ adm.email }}</small>
+                    </td>
+                    <td>
+                        {% if adm.status == 'active' %}
+                        <span class="badge bg-success-subtle text-success border border-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary border">Inactive</span>
+                        {% endif %}
+                        {% if adm.deletion_requested %}
+                        <span class="badge bg-danger">Deletion Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <small class="text-muted">
+                            {{ adm.last_login.strftime('%H:%M:%S, %d %b') if adm.last_login else 'Never' }}
+                        </small>
+                    </td>
+                    <td><span class="fw-semibold">{{ adm.prod_count }}</span> items</td>
+                    <td class="fw-bold text-success">₹{{ "{:,.2f}".format(adm.revenue if adm.revenue else 0) }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('admin.view_admin_inventory', t_admin_id=adm.admin_id) }}"
+                            class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-boxes me-1"></i> View Inventory
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+
+<div class="row">
+    <!-- Stat Cards -->
+    <div class="col-md-4">
+        <div class="admin-card text-center">
+            <div class="text-primary mb-2">
+                <i class="bi bi-box-seam fs-1"></i>
+            </div>
+            <h5 class="text-muted">{% if is_super %}Global Total Products{% else %}My Total Products{% endif %}</h5>
+            <h3 class="fw-bold">{{ total_products }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-card text-center">
+            <div class="text-success mb-2">
+                <i class="bi bi-currency-dollar fs-1"></i>
+            </div>
+            <h5 class="text-muted">{% if is_super %}Global Total Revenue{% else %}My Total Revenue{% endif %}</h5>
+            <h3 class="fw-bold">₹{{ '{:,.2f}'.format(total_revenue) }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-card text-center">
+            <div class="text-info mb-2">
+                <i class="bi bi-people fs-1"></i>
+            </div>
+            <h5 class="text-muted">{% if is_super %}Total Users{% else %}My Customers{% endif %}</h5>
+            <h3 class="fw-bold">{{ total_customers }}</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders Section -->
+<div class="admin-card mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">Recent Orders</h4>
+        <a href="{{ url_for('admin.all_orders') }}" class="btn btn-sm btn-link text-decoration-none fw-bold">View All
+            Orders</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border-light">
+            <thead class="bg-light">
+                <tr>
+                    <th class="border-0 rounded-start">Order ID</th>
+                    <th class="border-0">Customer</th>
+                    <th class="border-0">Amount</th>
+                    <th class="border-0">Status</th>
+                    <th class="border-0 rounded-end">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in recent_orders %}
+                <tr>
+                    <td class="fw-bold text-primary">#{{ order.order_id }}</td>
+                    <td>
+                        <div class="fw-semibold">{{ order.customer_name }}</div>
+                        <small class="text-muted">ID: #{{ order.user_id }}</small>
+                    </td>
+                    <td class="fw-bold">₹{{ '{:,.2f}'.format(order.amount) }}</td>
+                    <td>
+                        <span
+                            class="badge rounded-pill {% if order.payment_status in ['paid', 'Completed (Mock)'] %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning{% endif %} px-3">
+                            {{ order.payment_status }}
+                        </span>
+                    </td>
+                    <td class="text-muted small">
+                        {{ order.created_at.strftime('%d %b, %H:%M') if order.created_at else 'N/A' }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">No orders found yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Admin Logins Section -->
+<div class="admin-card mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">Recent Admin Logins</h4>
+        <span class="badge bg-info text-dark">Recent 10 attempts</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border-light">
+            <thead class="bg-light">
+                <tr>
+                    <th class="border-0 rounded-start">Admin Name</th>
+                    <th class="border-0">Login Time</th>
+                    <th class="border-0">IP Address</th>
+                    <th class="border-0 rounded-end">Browser / Device</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for login in recent_logins %}
+                <tr>
+                    <td class="fw-bold">{{ login.admin_name }}</td>
+                    <td class="text-primary small">
+                        {{ login.login_time.strftime('%d %b, %H:%M:%S') if login.login_time else 'N/A' }}
+                    </td>
+                    <td><small class="text-muted">{{ login.ip_address if login.ip_address else 'Unknown' }}</small></td>
+                    <td>
+                        <small class="text-muted" title="{{ login.browser }}">
+                            {{ login.browser[:80] }}{% if login.browser|length > 80 %}...{% endif %}
+                        </small>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center py-3 text-muted">No login records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="admin-card mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">Quick Actions</h4>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <a href="{{ url_for('admin.add_item_page') }}" class="btn btn-outline-primary w-100 py-3">
+                <i class="bi bi-plus-circle d-block fs-4 mb-1"></i>
+                Add New Product
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('admin.item_list') }}" class="btn btn-outline-secondary w-100 py-3">
+                <i class="bi bi-list-ul d-block fs-4 mb-1"></i>
+                Manage Inventory
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('admin.admin_profile_view') }}" class="btn btn-outline-info w-100 py-3">
+                <i class="bi bi-person-gear d-block fs-4 mb-1"></i>
+                Account Settings
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

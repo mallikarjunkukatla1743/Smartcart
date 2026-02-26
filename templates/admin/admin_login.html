@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg border-0 p-4" style="width: 400px; border-radius: 15px;">
+        <div class="text-center mb-4">
+            <h3 class="fw-bold">Admin Portal</h3>
+            <p class="text-muted">Secure Login</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger py-2 small">{{ error }}</div>
+        {% endif %}
+
+        <form action="{{ url_for('admin.admin_login') }}" method="POST">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Email Address</label>
+                <input type="email" name="email" class="form-control" required placeholder="admin@smartcart.com">
+            </div>
+            <div class="mb-2">
+                <div class="d-flex justify-content-between">
+                    <label class="form-label small fw-bold">Password</label>
+                    <a href="{{ url_for('admin.admin_forgot_password') }}"
+                        class="small text-primary text-decoration-none">Forgot Password?</a>
+                </div>
+                <input type="password" name="password" class="form-control" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mt-3">Login as Admin</button>
+
+            <div class="text-center mt-4">
+                <p class="small text-muted">Don't have an admin account? <a href="{{ url_for('admin.admin_signup') }}"
+                        class="text-primary text-decoration-none fw-bold">Create Account</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

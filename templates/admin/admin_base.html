@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SmartCart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Mobile Toggle Header -->
+    <div class="admin-mobile-header">
+        <h5 class="fw-bold mb-0 text-primary">🛒 SmartCart</h5>
+        <button class="btn btn-outline-primary" id="sidebarToggle">
+            <i class="bi bi-list"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="adminSidebar">
+        <div class="px-4 mb-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="fw-bold text-white mb-0">🛒 SmartCart</h4>
+                <small class="text-muted">{% if session.get('is_super') %}Super Admin{% else %}Admin Panel{% endif
+                    %}</small>
+            </div>
+            <button class="btn btn-sm btn-outline-light d-lg-none" id="sidebarClose">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <nav>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="admin-nav-link">
+                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </a>
+            <a href="{{ url_for('admin.item_list') }}" class="admin-nav-link">
+                <i class="bi bi-box me-2"></i> Inventory
+            </a>
+            <a href="{{ url_for('admin.all_orders') }}" class="admin-nav-link">
+                <i class="bi bi-cart me-2"></i> Orders
+            </a>
+            <a href="{{ url_for('admin.add_item_page') }}" class="admin-nav-link">
+                <i class="bi bi-plus-circle me-2"></i> Add Product
+            </a>
+            <a href="{{ url_for('admin.admin_profile_view') }}" class="admin-nav-link">
+                <i class="bi bi-person me-2"></i> My Profile
+            </a>
+            <hr class="mx-3 text-secondary">
+            <a href="{{ url_for('admin.admin_logout') }}" class="admin-nav-link text-danger">
+                <i class="bi bi-box-arrow-right me-2"></i> Logout
+            </a>
+            <a href="{{ url_for('admin.delete_admin_account') }}" class="admin-nav-link text-danger mt-2 small"
+                onclick="return confirm('Are you sure you want to delete your account permanently? All your products will also be removed.')">
+                <i class="bi bi-trash me-2"></i> Delete Account
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-0">{% block page_title %}Dashboard{% endblock %}</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+                        <li class="breadcrumb-item active">@yield('breadcrumb')</li>
+                    </ol>
+                </nav>
+            </div>
+
+            {% if session.get('admin_name') %}
+            <div class="d-flex align-items-center">
+                <div class="text-end me-3 d-none d-sm-block">
+                    <div class="fw-bold">{{ session.get('admin_name') }}</div>
+                    <small class="text-muted">{% if session.get('is_super') %}Super Admin{% else %}Administrator{% endif
+                        %}</small>
+                </div>
+
+                <!-- Admin Avatar with Placeholder Logic -->
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle"
+                        data-bs-toggle="dropdown">
+                        {% if session.get('profile_image') and session.get('profile_image') != 'None' and
+                        session.get('profile_image') != '' %}
+                        <img src="{{ url_for('static', filename='uploads/admin_profiles/' + session.get('profile_image')) }}"
+                            class="rounded-circle shadow-sm border object-fit-cover" width="40" height="40">
+                        {% else %}
+                        <div class="avatar-placeholder shadow-sm bg-primary text-white"
+                            style="width: 40px; height: 40px; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                            {{ session.get('admin_name')[0]|upper if session.get('admin_name') else 'A' }}
+                        </div>
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile_view') }}"><i
+                                    class="bi bi-person me-2"></i>Profile</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('admin.admin_logout') }}"><i
+                                    class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        <li><a class="dropdown-item text-danger small"
+                                href="{{ url_for('admin.delete_admin_account') }}"
+                                onclick="return confirm('Delete account permanently?')"><i
+                                    class="bi bi-trash me-2"></i>Delete Account</a></li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show shadow-sm border-0"
+            role="alert">
+            <i class="bi bi-info-circle me-2"></i> {{ message }}
+            <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <!-- Overlay for mobile sidebar -->
+    <div class="sidebar-overlay" id="sidebarOverlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:998;">
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const sidebar = document.getElementById('adminSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const toggleBtn = document.getElementById('sidebarToggle');
+        const closeBtn = document.getElementById('sidebarClose');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('show');
+            if (sidebar.classList.contains('show')) {
+                overlay.style.display = 'block';
+            } else {
+                overlay.style.display = 'none';
+            }
+        }
+
+        if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+        if (closeBtn) closeBtn.addEventListener('click', toggleSidebar);
+        if (overlay) overlay.addEventListener('click', toggleSidebar);
+    </script>
+</body>
+
+</html>

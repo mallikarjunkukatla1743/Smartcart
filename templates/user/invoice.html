@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Invoice #{{ order.order_id }}</title>
+    <style>
+        /* PDF specific tweaks for xhtml2pdf */
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #1a202c;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+        }
+
+        .container {
+            width: 100%;
+        }
+
+        /* Header Section */
+        .header {
+            width: 100%;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+
+        .header-table {
+            width: 100%;
+        }
+
+        .brand-logo {
+            font-size: 28pt;
+            font-weight: bold;
+            color: #2b6cb0;
+        }
+
+        .invoice-title {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #a0aec0;
+            text-align: right;
+            text-transform: uppercase;
+        }
+
+        /* Info Grid */
+        .info-section {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .info-table {
+            width: 100%;
+        }
+
+        .section-title {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #718096;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #edf2f7;
+            padding-bottom: 4px;
+        }
+
+        .info-content {
+            font-size: 10pt;
+            color: #2d3748;
+        }
+
+        .address-box {
+            white-space: pre-wrap;
+            color: #4a5568;
+            font-size: 10pt;
+        }
+
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .items-table th {
+            background-color: #f7fafc;
+            color: #4a5568;
+            font-weight: bold;
+            text-align: left;
+            padding: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 9pt;
+            text-transform: uppercase;
+        }
+
+        .items-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: top;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* Summary Section */
+        .summary-wrapper {
+            width: 100%;
+        }
+
+        .summary-table {
+            width: 40%;
+            float: right;
+        }
+
+        .summary-row td {
+            padding: 5px 0;
+        }
+
+        .total-row {
+            border-top: 2px solid #e2e8f0;
+            font-weight: bold;
+            font-size: 13pt;
+            color: #2b6cb0;
+        }
+
+        /* Payment Details */
+        .payment-details {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 9pt;
+            text-transform: uppercase;
+        }
+
+        .status-paid {
+            background-color: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-other {
+            background-color: #feebc8;
+            color: #744210;
+        }
+
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 9pt;
+            color: #a0aec0;
+            border-top: 1px solid #edf2f7;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <table class="header-table">
+                <tr>
+                    <td>
+                        <div class="brand-logo">SmartCart</div>
+                        <div style="color: #718096; font-size: 9pt;">Your Premium Shopping Destination</div>
+                    </td>
+                    <td class="invoice-title">Invoice</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Order Metadata & Status -->
+        <table class="info-table" style="margin-bottom: 25px;">
+            <tr>
+                <td width="50%">
+                    <div class="section-title">Order Information</div>
+                    <div class="info-content">
+                        <strong>Invoice Number:</strong> #INV-{{ order.order_id }}<br>
+                        <strong>Order Date:</strong> {{ order.created_at.strftime('%d %B, %Y') if order.created_at else
+                        'N/A' }}<br>
+                        <strong>Payment Status:</strong>
+                        <span
+                            class="status-badge {% if order.payment_status|lower in ['paid', 'completed (mock)'] %}status-paid{% else %}status-other{% endif %}">
+                            {{ order.payment_status }}
+                        </span>
+                    </div>
+                </td>
+                <td width="50%" class="text-right">
+                    <div class="section-title">Payment Method</div>
+                    <div class="info-content">
+                        <strong>Method:</strong> Online Payment (Razorpay)<br>
+                        {% if order.razorpay_order_id %}
+                        <strong>Order ID:</strong> {{ order.razorpay_order_id }}<br>
+                        {% endif %}
+                        {% if order.razorpay_payment_id %}
+                        <strong>Payment ID:</strong> {{ order.razorpay_payment_id }}
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Addresses -->
+        <table class="info-table" style="margin-bottom: 35px;">
+            <tr>
+                <td width="50%" style="padding-right: 20px;">
+                    <div class="section-title">Billed To</div>
+                    <div class="info-content">
+                        <strong>{{ order.user_name }}</strong><br>
+                        {{ order.user_email }}
+                    </div>
+                </td>
+                <td width="50%">
+                    <div class="section-title">Shipping Address</div>
+                    <div class="address-box">{{ order.shipping_address if order.shipping_address else 'Address not
+                        provided' }}</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Items Table -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th width="50%">Description</th>
+                    <th width="10%" class="text-center">Qty</th>
+                    <th width="20%" class="text-right">Unit Price</th>
+                    <th width="20%" class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for it in items %}
+                <tr>
+                    <td>
+                        <div style="font-weight: bold; color: #2d3748;">{{ it.product_name }}</div>
+                        <div style="font-size: 8pt; color: #718096;">Product ID: #{{ it.product_id }}</div>
+                    </td>
+                    <td class="text-center">{{ it.quantity }}</td>
+                    <td class="text-right">₹{{ "{:,.2f}".format(it.price) }}</td>
+                    <td class="text-right">₹{{ "{:,.2f}".format(it.price * it.quantity) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Summary -->
+        <div style="width: 100%; display: block;">
+            <table align="right" width="40%" class="summary-row">
+                <tr>
+                    <td style="color: #718096;">Subtotal:</td>
+                    <td class="text-right">₹{{ "{:,.2f}".format(order.amount) }}</td>
+                </tr>
+                <tr>
+                    <td style="color: #718096;">Shipping:</td>
+                    <td class="text-right">₹0.00</td>
+                </tr>
+                <tr class="total-row">
+                    <td style="padding-top: 10px;">Grand Total:</td>
+                    <td class="text-right" style="padding-top: 10px;">₹{{ "{:,.2f}".format(order.amount) }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="clear: both;"></div>
+
+        <!-- Sticky Footer -->
+        <div class="footer">
+            <div style="font-weight: bold; color: #4a5568; margin-bottom: 5px;">Thank you for shopping with SmartCart!
+            </div>
+            <div>For support, contact support@smartcart.com | Visit us at www.smartcart.com</div>
+            <div style="font-size: 7.5pt; margin-top: 15px;">This is a computer-generated invoice and does not require a
+                signature.</div>
+        </div>
+    </div>
+</body>
+
+</html>

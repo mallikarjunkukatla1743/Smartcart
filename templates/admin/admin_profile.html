@@ -1,0 +1,64 @@
+{% extends "admin/admin_base.html" %}
+
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="admin-card">
+            <div class="text-center mb-5">
+                <div class="position-relative d-inline-block">
+                    {% if admin.profile_image %}
+                    <img src="{{ url_for('static', filename='uploads/admin_profiles/' + admin.profile_image) }}"
+                        class="rounded-circle shadow shadow-lg border"
+                        style="width: 150px; height: 150px; object-fit: cover; border: 4px solid white;">
+                    {% else %}
+                    <div class="rounded-circle mx-auto bg-primary text-white d-flex align-items-center justify-content-center shadow-lg"
+                        style="width: 150px; height: 150px; border: 4px solid white; font-size: 4rem; font-weight: bold;">
+                        {{ admin.name[0]|upper if admin.name else 'A' }}
+                    </div>
+                    {% endif %}
+                </div>
+                <h3 class="fw-bold mt-3 mb-0">{{ admin.name }}</h3>
+                <p class="text-muted">System Administrator</p>
+            </div>
+
+            <form action="{{ url_for('admin.admin_profile_view') }}" method="POST" enctype="multipart/form-data">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">FULL NAME</label>
+                            <input type="text" name="name" class="form-control" value="{{ admin.name }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">EMAIL ADDRESS</label>
+                            <input type="email" name="email" class="form-control" value="{{ admin.email }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">NEW PASSWORD</label>
+                            <input type="password" name="password" class="form-control"
+                                placeholder="Leave blank to keep current">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">UPDATE PROFILE IMAGE</label>
+                            <input type="file" name="profile_image" class="form-control" accept="image/*">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 border-top pt-4 text-center">
+                    <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-save me-2"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

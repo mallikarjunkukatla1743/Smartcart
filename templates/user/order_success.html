@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="content-card text-center" style="max-width: 600px;">
+    <div style="font-size: 4rem;">🎉</div>
+    <h2 class="text-success">Order Confirmed!</h2>
+    <p>Thank you for shopping with SmartCart. Your order has been placed successfully.</p>
+
+    <div class="bg-light p-3 rounded my-4 text-start">
+        <p class="mb-1"><strong>Order ID:</strong> #{{ order.order_id }}</p>
+        <p class="mb-1"><strong>Amount Paid:</strong> ₹{{ order.amount }}</p>
+        <p class="mb-1"><strong>Status:</strong> {{ order.payment_status }}</p>
+        <p class="mb-0"><strong>Shipping Address:</strong><br><span style="white-space: pre-line;">{{
+                order.shipping_address }}</span></p>
+    </div>
+
+    <div class="d-grid gap-2">
+        <a href="/user/my-orders" class="btn btn-primary">View My Orders</a>
+        <a href="/user/products" class="btn btn-outline-secondary">Continue Shopping</a>
+    </div>
+</div>
+{% endblock %}

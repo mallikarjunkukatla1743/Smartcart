@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid px-lg-5 mt-4">
+    <!-- Hero Section / Welcome -->
+    <div class="row mb-5">
+        <div class="col-12 text-center hero-section py-5">
+            <h1 class="display-4 fw-800 welcome-text">
+                Welcome, <span class="gradient-text">{{ user_name }}</span>! 👋
+            </h1>
+            <p class="lead text-muted mx-auto" style="max-width: 600px;">
+                Your premium destination for the latest trends and exclusive offers. Discover your next favorite thing
+                today!
+            </p>
+
+            {% if request.args.get('search') or request.args.get('category') %}
+            <div class="mt-4">
+                <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill">
+                    Found results for:
+                    {% if request.args.get('search') %}"{{ request.args.get('search') }}"{% endif %}
+                    {% if request.args.get('category') %}({{ request.args.get('category') }}){% endif %}
+                </span>
+                <a href="{{ url_for('user.user_dashboard') }}"
+                    class="ms-2 text-muted small text-decoration-none fw-bold"><i class="bi bi-x-circle me-1"></i>Clear
+                    Filters</a>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Featured Products Title -->
+    <div class="d-flex align-items-center mb-4 section-header">
+        <div class="icon-box me-3">
+            <i class="bi bi-stars text-warning fs-3"></i>
+        </div>
+        <div>
+            <h3 class="fw-bold mb-0">Featured Products</h3>
+            <p class="text-muted mb-0 small text-uppercase ls-1">Recommended for you</p>
+        </div>
+        <div class="ms-auto">
+            <a href="{{ url_for('user.user_products') }}" class="text-primary text-decoration-none fw-semibold">View All
+                <i class="bi bi-chevron-right small"></i></a>
+        </div>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-3 g-md-4">
+        {% for product in products %}
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm product-card transition-all">
+                <div class="position-relative overflow-hidden group">
+                    <img src="/static/uploads/product_images/{{ product.image }}" class="card-img-top p-4"
+                        style="height: 200px; object-fit: contain; transition: transform 0.5s ease;"
+                        alt="{{ product.name }}">
+                </div>
+                <div class="card-body p-3 d-flex flex-column text-center">
+                    <h6 class="fw-bold mb-1 text-dark text-truncate">{{ product.name }}</h6>
+                    <span class="badge bg-light text-secondary mb-3 align-self-center small">{{ product.category
+                        }}</span>
+                    <div class="mt-auto">
+                        <h5 class="text-primary fw-800 mb-3">₹{{ '{:,.0f}'.format(product.price) }}</h5>
+                        <button onclick="addToCart({{ product.product_id }})"
+                            class="btn btn-primary w-100 rounded-pill btn-sm fw-bold py-2 shadow-sm-hover mb-2">
+                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                        </button>
+                        <a href="{{ url_for('user.user_product_details', product_id=product.product_id) }}"
+                            class="btn btn-outline-primary w-100 rounded-pill btn-sm fw-bold py-2">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="empty-state">
+                <i class="bi bi-search text-muted opacity-25 display-1"></i>
+                <h4 class="mt-4 fw-bold">No products found</h4>
+                <p class="text-muted">Try adjusting your filters or search keywords.</p>
+                <a href="{{ url_for('user.user_dashboard') }}"
+                    class="btn btn-link fw-bold text-primary text-decoration-none">Clear all
+                    filters</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+    :root {
+        --primary-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    }
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .fw-800 {
+        font-weight: 800;
+    }
+
+    .ls-1 {
+        letter-spacing: 1px;
+    }
+
+    .hero-section {
+        background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.05), transparent),
+            radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.05), transparent);
+        border-radius: 30px;
+    }
+
+    .gradient-text {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .section-header {
+        border-bottom: 2px solid #f1f5f9;
+        padding-bottom: 15px;
+    }
+
+    .icon-box {
+        width: 50px;
+        height: 50px;
+        background: #fff;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .product-card {
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.03) !important;
+    }
+
+    .product-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    .product-card:hover img {
+        transform: scale(1.1);
+    }
+
+    .product-overlay {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        opacity: 0;
+        transition: all 0.3s;
+        z-index: 10;
+    }
+
+    .product-card:hover .product-overlay {
+        opacity: 1;
+    }
+
+    .hover-lift {
+        transition: transform 0.2s;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-3px);
+    }
+
+    .bg-soft-primary {
+        background-color: rgba(37, 99, 235, 0.1);
+    }
+
+    .shadow-sm-hover:hover {
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 576px) {
+        .welcome-text {
+            font-size: 2rem;
+        }
+
+        .hero-section {
+            padding: 30px 15px !important;
+        }
+
+        .row-cols-2>.col {
+            padding: 8px;
+        }
+
+        .product-card {
+            border-radius: 15px;
+        }
+
+        .product-card .p-4 {
+            padding: 1rem !important;
+        }
+
+        .product-card img {
+            height: 140px !important;
+        }
+    }
+</style>
+
+{% endblock %}

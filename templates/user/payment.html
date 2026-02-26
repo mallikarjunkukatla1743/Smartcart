@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary py-4 text-center">
+                    <h3 class="text-white fw-800 mb-0">Secure Checkout</h3>
+                </div>
+                <div class="card-body p-4 p-md-5 text-center">
+                    <div class="mb-4">
+                        <i class="bi bi-shield-check text-success display-4"></i>
+                    </div>
+
+                    <h5 class="text-muted mb-1">Total Payable Amount</h5>
+                    <h1 class="display-4 fw-800 text-dark mb-4">₹{{ '{:,.2f}'.format(amount) }}</h1>
+
+                    <div class="alert alert-light border-0 bg-light rounded-4 p-3 mb-4 text-start">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            <span class="fw-bold">Order Verification</span>
+                        </div>
+                        <p class="small text-muted mb-0">Please do not refresh this page or press back until the payment
+                            is complete.</p>
+                    </div>
+
+                    <!-- Real Razorpay UI -->
+                    <button id="rzp-button"
+                        class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-green mb-3">
+                        Pay with Razorpay <i class="bi bi-credit-card-2-front ms-2"></i>
+                    </button>
+
+                    <div class="mt-4 pt-4 border-top">
+                        <div class="d-flex justify-content-center gap-4 text-muted grayscale opacity-50">
+                            <i class="bi bi-visa fs-3"></i>
+                            <i class="bi bi-credit-card-2-back fs-3"></i>
+                            <i class="bi bi-bank fs-3"></i>
+                        </div>
+                        <p class="small text-muted mt-3 mb-0">100% Encrypted & Secure Payments</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="/user/cart" class="text-decoration-none text-muted small fw-bold">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Cart
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Razorpay Checkout Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    var options = {
+        "key": "{{ key_id }}",
+        "amount": "{{ (amount * 100)|int }}",
+        "currency": "INR",
+        "name": "SmartCart",
+        "description": "Premium Order Payment",
+        "order_id": "{{ order_id }}",
+        "handler": function (response) {
+            var form = document.createElement("form");
+            form.method = "POST";
+            form.action = "{{ url_for('user.verify_payment') }}";
+            var fields = {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+            };
+            for (var name in fields) {
+                var input = document.createElement("input");
+                input.type = "hidden"; input.name = name; input.value = fields[name];
+                form.appendChild(input);
+            }
+            document.body.appendChild(form);
+            form.submit();
+        },
+        "theme": { "color": "#0d6efd" }
+    };
+    var rzp = new Razorpay(options);
+    document.getElementById('rzp-button').onclick = function (e) {
+        rzp.open(); e.preventDefault();
+    };
+</script>
+
+<style>
+    .fw-800 {
+        font-weight: 800;
+    }
+
+    .shadow-green:hover {
+        box-shadow: 0 10px 20px -5px rgba(25, 135, 84, 0.4);
+        transform: translateY(-2px);
+        transition: all 0.3s;
+    }
+
+    .grayscale {
+        filter: grayscale(1);
+    }
+</style>
+{% endblock %}
