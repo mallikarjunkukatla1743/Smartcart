@@ -75,4 +75,4 @@ Open `http://127.0.0.1:5000` in your browser.
 The `.env` file and `smartcart.db` are ignored by Git to protect your sensitive credentials and local data. Always use the provided `.env.example` to set up new environments.
 
 ---
-Built with ❤️ by [Your Name]
+Built with ❤️ by [Mallikarjun Kukatla]
