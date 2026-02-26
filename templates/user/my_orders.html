@@ -49,8 +49,7 @@
                         <div class="row align-items-center">
                             <div class="col-md-3">
                                 <div class="small text-muted mb-1">Placed On</div>
-                                <div class="fw-semibold text-dark">{{ order.created_at.strftime('%d %b, %Y') if
-                                    order.created_at else 'N/A' }}</div>
+                                <div class="fw-semibold text-dark">{{ order.created_at|strftime('%d %b, %Y') }}</div>
                                 <div class="small text-muted mt-2">Shipping Address</div>
                                 <div class="small text-dark text-truncate" style="max-width: 180px;"
                                     title="{{ order.shipping_address }}">

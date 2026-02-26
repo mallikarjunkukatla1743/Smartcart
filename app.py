@@ -14,6 +14,17 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
+
+def format_datetime(value, format_str='%d %b, %Y'):
+    if not value: return "N/A"
+    if isinstance(value, str):
+        try:
+            # SQLite stores dates as strings, e.g., '2026-02-24T22:45:39'
+            value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except: return value
+    return value.strftime(format_str)
+
+app.jinja_env.filters['strftime'] = format_datetime
 app.config['SESSION_COOKIE_NAME'] = 'smartcart_v3_session'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -44,9 +55,28 @@ razorpay_client = razorpay.Client(
 )
 
 def get_db_connection():
-    conn = sqlite3.connect(config.DATABASE_URL)
+    conn = sqlite3.connect(config.DATABASE_URL, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
     conn.row_factory = sqlite3.Row  # This makes rows behave like dictionaries
     return conn
+
+def init_db():
+    """Initializes the database by creating necessary tables if they don't exist."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Create contact_messages table (moved from update_db.py)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS contact_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT,
+        subject TEXT,
+        message TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+    conn.commit()
+    conn.close()
+    print("Database initialized.")
 
 
 # ---------------------------------------------------------
@@ -299,59 +329,62 @@ def admin_login():
 
         conn = get_db_connection()
         cursor = conn.cursor()
-        query = "SELECT * FROM admin WHERE email = %s"
-        cursor.execute(query, (email,))
+        cursor.execute("SELECT * FROM admin WHERE email = ?", (email,))
         admin = cursor.fetchone()
         cursor.close()
         conn.close()
 
-        if admin and (bcrypt.checkpw(password.encode('utf-8'), admin['password'].encode('utf-8')) or password == admin['password']):
-            if admin['status'] != 'active' and not admin['is_super']:
-                flash("Your account is pending approval by the Super Admin.", "warning")
-                return render_template('admin/admin_login.html')
+        if admin:
+            if (bcrypt.checkpw(password.encode('utf-8'), admin['password'].encode('utf-8')) or password == admin['password']):
+                if admin['status'] != 'active' and not admin['is_super']:
+                    flash("Your account is pending approval by the Super Admin.", "warning")
+                    return render_template('admin/admin_login.html')
+                    
+                # Record login event, IP, and unique session token
+                browser = request.headers.get('User-Agent', 'Unknown')
+                ip_addr = request.remote_addr
+                session_token = str(uuid.uuid4())
+                now = datetime.now()
                 
-            # Record login event, IP, and unique session token
-            browser = request.headers.get('User-Agent', 'Unknown')
-            ip_addr = request.remote_addr
-            session_token = str(uuid.uuid4())
-            now = datetime.now()
-            
-            try:
-                conn_log = get_db_connection()
-                cursor_log = conn_log.cursor()
-                cursor_log.execute("UPDATE admin SET last_login = %s, session_token = %s WHERE admin_id = %s", 
-                                   (now, session_token, admin['admin_id']))
-                cursor_log.execute("INSERT INTO login_logs (admin_id, admin_name, login_time, browser, ip_address) VALUES (%s, %s, %s, %s, %s)", 
-                                   (admin['admin_id'], admin['name'], now, browser, ip_addr))
-                conn_log.commit()
-                cursor_log.close()
-                conn_log.close()
-            except Exception as e:
-                print(f"Error logging login: {e}")
+                try:
+                    conn_log = get_db_connection()
+                    cursor_log = conn_log.cursor()
+                    cursor_log.execute("UPDATE admin SET last_login = ?, session_token = ? WHERE admin_id = ?", 
+                                       (now, session_token, admin['admin_id']))
+                    cursor_log.execute("INSERT INTO login_logs (admin_id, admin_name, login_time, browser, ip_address) VALUES (?, ?, ?, ?, ?)", 
+                                       (admin['admin_id'], admin['name'], now, browser, ip_addr))
+                    conn_log.commit()
+                    cursor_log.close()
+                    conn_log.close()
+                except Exception as e:
+                    print(f"Error logging login: {e}")
 
-            # Store in the multi-session profile collection
-            if 'admin_profiles' not in session or not isinstance(session['admin_profiles'], dict):
-                session['admin_profiles'] = {}
-            
-            session['admin_profiles'][str(admin['admin_id'])] = {
-                'admin_id': admin['admin_id'],
-                'admin_name': admin['name'],
-                'profile_image': admin['profile_image'],
-                'is_super': admin['is_super'],
-                'session_token': session_token
-            }
-            
-            # Set the current active session (for initial dashboard load)
-            session['admin_id'] = admin['admin_id']
-            session['admin_name'] = admin['name']
-            session['profile_image'] = admin['profile_image']
-            session['is_super'] = admin['is_super']
-            session['session_token'] = session_token
-            
-            session.modified = True
-            return redirect(url_for('admin.admin_dashboard', aid=admin['admin_id']))
+                # Store in the multi-session profile collection
+                if 'admin_profiles' not in session or not isinstance(session['admin_profiles'], dict):
+                    session['admin_profiles'] = {}
+                
+                session['admin_profiles'][str(admin['admin_id'])] = {
+                    'admin_id': admin['admin_id'],
+                    'admin_name': admin['name'],
+                    'profile_image': admin['profile_image'],
+                    'is_super': admin['is_super'],
+                    'session_token': session_token
+                }
+                
+                # Set the current active session (for initial dashboard load)
+                session['admin_id'] = admin['admin_id']
+                session['admin_name'] = admin['name']
+                session['profile_image'] = admin['profile_image']
+                session['is_super'] = admin['is_super']
+                session['session_token'] = session_token
+                
+                session.modified = True
+                return redirect(url_for('admin.admin_dashboard', aid=admin['admin_id']))
+            else:
+                return render_template('admin/admin_login.html', error="Invalid Password")
         else:
-            return render_template('admin/admin_login.html', error="Invalid Email or Password")
+            flash("Email not found. Please register first!", "danger")
+            return redirect(url_for('admin.admin_signup'))
 
     return render_template('admin/admin_login.html')
 
@@ -369,14 +402,33 @@ def admin_dashboard():
     cursor = conn.cursor()
 
     if is_super:
-        cursor.execute("SELECT COUNT(*) as total_products FROM products WHERE is_active = 1")
+        # Only count products from ACTIVE, NON-SUPER administrators
+        cursor.execute("""
+            SELECT COUNT(p.product_id) as total_products 
+            FROM products p 
+            JOIN admin a ON p.admin_id = a.admin_id 
+            WHERE p.is_active = 1 AND a.status = 'active' AND a.is_super = 0
+        """)
         total_products = cursor.fetchone()['total_products']
-        cursor.execute("SELECT SUM(amount) as total_revenue FROM orders WHERE payment_status IN ('paid', 'Completed (Mock)')")
+        
+        # Calculate global revenue only from ACTIVE, NON-SUPER administrators
+        cursor.execute("""
+            SELECT SUM(oi.price * oi.quantity) as total_revenue 
+            FROM order_items oi 
+            JOIN products p ON oi.product_id = p.product_id 
+            JOIN admin a ON p.admin_id = a.admin_id 
+            JOIN orders o ON oi.order_id = o.order_id 
+            WHERE o.payment_status IN ('paid', 'Paid', 'Completed (Mock)') 
+            AND a.status = 'active' AND a.is_super = 0
+        """)
         res = cursor.fetchone()
         total_revenue = res['total_revenue'] if res['total_revenue'] else 0
+        
         cursor.execute("SELECT COUNT(*) as total_customers FROM users")
         total_customers = cursor.fetchone()['total_customers']
-        cursor.execute("SELECT o.*, u.name as customer_name FROM orders o JOIN users u ON o.user_id = u.user_id ORDER BY o.created_at DESC LIMIT 5")
+        
+        # Order by order_id DESC to show most recent first
+        cursor.execute("SELECT o.*, u.name as customer_name FROM orders o JOIN users u ON o.user_id = u.user_id ORDER BY o.order_id DESC LIMIT 5")
         recent_orders = cursor.fetchall()
         # 3. All Administrators Overview with Searching & Filtering
         search_admin = request.args.get('search_admin', '')
@@ -384,18 +436,19 @@ def admin_dashboard():
         
         query_admins = """
             SELECT a.admin_id, a.name, a.email, a.status, a.deletion_requested, a.last_login, 
-            (SELECT COUNT(*) FROM products p WHERE p.admin_id = a.admin_id) as prod_count, 
+            (SELECT COUNT(*) FROM products p WHERE p.admin_id = a.admin_id AND p.is_active = 1) as prod_count, 
             (SELECT SUM(oi.price * oi.quantity) FROM order_items oi 
              JOIN products p2 ON oi.product_id = p2.product_id 
-             WHERE p2.admin_id = a.admin_id) as revenue 
+             JOIN orders o2 ON oi.order_id = o2.order_id
+             WHERE p2.admin_id = a.admin_id AND o2.payment_status IN ('paid', 'Paid', 'Completed (Mock)')) as revenue 
             FROM admin a WHERE a.is_super = 0
         """
         params_admins = []
         if search_admin:
-            query_admins += " AND (a.name LIKE %s OR a.email LIKE %s)"
+            query_admins += " AND (a.name LIKE ? OR a.email LIKE ?)"
             params_admins.extend([f"%{search_admin}%", f"%{search_admin}%"])
         if status_filter:
-            query_admins += " AND a.status = %s"
+            query_admins += " AND a.status = ?"
             params_admins.append(status_filter)
             
         cursor.execute(query_admins, params_admins)
@@ -407,7 +460,7 @@ def admin_dashboard():
         all_admins = []
         cursor.execute("SELECT COUNT(*) as total_products FROM products WHERE admin_id = ? AND is_active = 1", (admin_login_id,))
         total_products = cursor.fetchone()['total_products']
-        cursor.execute("SELECT SUM(oi.price * oi.quantity) as total_revenue FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN orders o ON oi.order_id = o.order_id WHERE p.admin_id = ? AND o.payment_status IN ('paid', 'Completed (Mock)')", (admin_login_id,))
+        cursor.execute("SELECT SUM(oi.price * oi.quantity) as total_revenue FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN orders o ON oi.order_id = o.order_id WHERE p.admin_id = ? AND o.payment_status IN ('paid', 'Paid', 'Completed (Mock)')", (admin_login_id,))
         res = cursor.fetchone()
         total_revenue = res['total_revenue'] if res['total_revenue'] else 0
         cursor.execute("SELECT COUNT(DISTINCT o.user_id) as total_customers FROM orders o JOIN order_items oi ON o.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id WHERE p.admin_id = ?", (admin_login_id,))
@@ -462,18 +515,18 @@ def all_orders():
         query = "SELECT o.*, u.name as customer_name FROM orders o JOIN users u ON o.user_id = u.user_id WHERE 1=1"
         params = []
     else:
-        query = "SELECT DISTINCT o.*, u.name as customer_name FROM orders o JOIN users u ON o.user_id = u.user_id JOIN order_items oi ON o.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id WHERE p.admin_id = %s"
+        query = "SELECT DISTINCT o.*, u.name as customer_name FROM orders o JOIN users u ON o.user_id = u.user_id JOIN order_items oi ON o.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id WHERE p.admin_id = ?"
         params = [admin_login_id]
 
     if search_order:
-        query += " AND (u.name LIKE %s OR CAST(o.order_id AS CHAR) LIKE %s)"
+        query += " AND (u.name LIKE ? OR CAST(o.order_id AS TEXT) LIKE ?)"
         params.extend([f"%{search_order}%", f"%{search_order}%"])
     
     if status_filter:
-        query += " AND o.payment_status = %s"
+        query += " AND o.payment_status = ?"
         params.append(status_filter)
 
-    query += " ORDER BY o.created_at DESC"
+    query += " ORDER BY o.order_id DESC"
     cursor.execute(query, params)
     orders = cursor.fetchall()
     cursor.close()
@@ -546,14 +599,14 @@ def view_admin_inventory(t_admin_id):
     cursor.execute("SELECT DISTINCT category FROM products WHERE admin_id = ?", (t_admin_id,))
     categories = cursor.fetchall()
 
-    query = "SELECT * FROM products WHERE admin_id = %s AND is_active = 1"
+    query = "SELECT * FROM products WHERE admin_id = ? AND is_active = 1"
     params = [t_admin_id]
     search, category_filter = request.args.get('search', ''), request.args.get('category', '')
     if search: 
-        query += " AND name LIKE %s"
+        query += " AND name LIKE ?"
         params.append("%" + search + "%")
     if category_filter: 
-        query += " AND category = %s"
+        query += " AND category = ?"
         params.append(category_filter)
         
     cursor.execute(query, params)
@@ -640,10 +693,10 @@ def item_list():
     cursor = conn.cursor()
     cursor.execute("SELECT DISTINCT category FROM products")
     categories = cursor.fetchall()
-    query, params = "SELECT * FROM products WHERE admin_id = %s AND is_active = 1", [session['admin_id']]
+    query, params = "SELECT * FROM products WHERE admin_id = ? AND is_active = 1", [session['admin_id']]
     search, category_filter = request.args.get('search', ''), request.args.get('category', '')
-    if search: query += " AND name LIKE %s"; params.append("%" + search + "%")
-    if category_filter: query += " AND category = %s"; params.append(category_filter)
+    if search: query += " AND name LIKE ?"; params.append("%" + search + "%")
+    if category_filter: query += " AND category = ?"; params.append(category_filter)
     cursor.execute(query, params)
     products = cursor.fetchall()
     cursor.close()
@@ -804,7 +857,7 @@ def user_register():
     conn = get_db_connection(); cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE email=?", (email,))
     if cursor.fetchone(): flash("Registered!", "danger"); return redirect(url_for('user.user_register'))
-    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     cursor.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, hashed))
     conn.commit(); cursor.close(); conn.close()
     flash("Success!", "success"); return redirect(url_for('user.user_login'))
@@ -817,9 +870,20 @@ def user_login():
         conn = get_db_connection(); cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
         user = cursor.fetchone(); cursor.close(); conn.close()
-        if user and bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
-            session['user_id'], session['user_name'] = user['user_id'], user['name']
-            flash("Welcome!", "success"); return redirect(url_for('user.user_dashboard'))
+        
+        if user:
+            db_password = user['password']
+            if isinstance(db_password, str):
+                db_password = db_password.encode('utf-8')
+                
+            if bcrypt.checkpw(password.encode('utf-8'), db_password):
+                session['user_id'], session['user_name'] = user['user_id'], user['name']
+                flash("Welcome!", "success"); return redirect(url_for('user.user_dashboard'))
+            else:
+                flash("Invalid password!", "danger")
+        else:
+            flash("Email not found. Please register first!", "danger")
+            return redirect(url_for('user.user_register'))
     return render_template('user/user_login.html')
 
 # 26. User Recovery Route: Sends a password reset OTP to customers
@@ -866,8 +930,8 @@ def user_dashboard():
     s, c = request.args.get('search', ''), request.args.get('category', '')
     conn = get_db_connection(); cursor = conn.cursor()
     q, p = "SELECT * FROM products WHERE is_active = 1", []
-    if s: q += " AND name LIKE %s"; p.append(f"%{s}%")
-    if c: q += " AND category = %s"; p.append(c)
+    if s: q += " AND name LIKE ?"; p.append(f"%{s}%")
+    if c: q += " AND category = ?"; p.append(c)
     cursor.execute(q + " ORDER BY product_id DESC", p)
     products = cursor.fetchall()
     cursor.execute("SELECT DISTINCT category FROM products WHERE is_active = 1")
@@ -886,8 +950,8 @@ def user_products():
     s, c = request.args.get('search', ''), request.args.get('category', '')
     conn = get_db_connection(); cursor = conn.cursor()
     q, p = "SELECT * FROM products WHERE is_active = 1", []
-    if s: q += " AND name LIKE %s"; p.append(f"%{s}%")
-    if c: q += " AND category = %s"; p.append(c)
+    if s: q += " AND name LIKE ?"; p.append(f"%{s}%")
+    if c: q += " AND category = ?"; p.append(c)
     cursor.execute(q + " ORDER BY product_id DESC", p)
     products = cursor.fetchall()
     cursor.execute("SELECT DISTINCT category FROM products WHERE is_active = 1")
@@ -922,9 +986,9 @@ def view_cart():
     cart = session.get('cart', {})
     if not cart: return render_template('user/cart.html', products=[], total=0)
     conn = get_db_connection(); cursor = conn.cursor()
-    placeholders = ', '.join(['%s'] * len(cart))
+    placeholders = ', '.join(['?'] * len(cart))
     cursor.execute(f"SELECT * FROM products WHERE product_id IN ({placeholders})", list(cart.keys()))
-    products = cursor.fetchall(); cursor.close(); conn.close(); total = 0
+    products = [dict(row) for row in cursor.fetchall()]; cursor.close(); conn.close(); total = 0
     for p in products: 
         p['quantity'] = cart[str(p['product_id'])]; p['subtotal'] = p['price'] * p['quantity']; total += p['subtotal']
     return render_template('user/cart.html', products=products, total=total)
@@ -1012,7 +1076,7 @@ def user_pay():
     cart = session.get('cart', {})
     if not cart: return redirect(url_for('user.user_dashboard'))
     conn = get_db_connection(); cursor = conn.cursor()
-    placeholders = ', '.join(['%s'] * len(cart))
+    placeholders = ', '.join(['?'] * len(cart))
     cursor.execute(f"SELECT * FROM products WHERE product_id IN ({placeholders})", list(cart.keys()))
     products = cursor.fetchall(); cursor.close(); conn.close(); total = sum(p['price'] * cart[str(p['product_id'])] for p in products)
     try:
@@ -1024,16 +1088,18 @@ def _create_order_in_db(uid, cart, payment_status, razor_oid, razor_pid=None):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        placeholders = ', '.join(['%s'] * len(cart))
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        placeholders = ', '.join(['?'] * len(cart))
         cursor.execute(f"SELECT * FROM products WHERE product_id IN ({placeholders})", list(cart.keys()))
         products = cursor.fetchall()
         total = sum(p['price'] * cart[str(p['product_id'])] for p in products)
         
         a = session.get('user_address', {})
         addr = f"Full Name: {a.get('full_name')}\nAddress: {a.get('address')}\nCity: {a.get('city')}\nState: {a.get('state')}\nPincode: {a.get('zipcode')}\nPhone: {a.get('phone')}"
-        
-        cursor.execute("INSERT INTO orders (user_id, amount, payment_status, razorpay_order_id, razorpay_payment_id, shipping_address) VALUES (?, ?, ?, ?, ?, ?)", 
-                       (uid, total, payment_status, razor_oid, razor_pid, addr))
+
+        cursor.execute("INSERT INTO orders (user_id, amount, payment_status, razorpay_order_id, razorpay_payment_id, shipping_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", 
+                       (uid, total, payment_status, razor_oid, razor_pid, addr, now))
         oid = cursor.lastrowid
         
         for p in products:
@@ -1113,8 +1179,66 @@ def user_profile():
 def about(): return render_template('about.html')
 
 # 50. Static Contact Route: Static page for business and support inquiries
-@user_bp.route('/contact')
-def contact(): return render_template('contact.html')
+@user_bp.route('/contact', methods=['GET', 'POST'])
+def contact():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        subject = request.form.get('subject')
+        message_text = request.form.get('message')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''INSERT INTO contact_messages (name, email, subject, message)
+                          VALUES (?, ?, ?, ?)''', (name, email, subject, message_text))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        try:
+            msg = Message(subject=f"New Contact Inquiry: {subject}",
+                          sender=config.MAIL_USERNAME,
+                          recipients=[config.MAIL_USERNAME]) # owner's email
+            msg.body = f"Name: {name}\nEmail: {email}\nSubject: {subject}\n\nMessage:\n{message_text}"
+            mail.send(msg)
+        except Exception as e:
+            print(f"Error sending contact email: {e}")
+            
+        flash("Thank you for your message! We will get back to you soon.", "success")
+        return redirect(url_for('user.contact'))
+    return render_template('contact.html')
+
+@user_bp.route('/user/auto-login')
+def auto_login():
+    """Automatically logs in a user or creates a guest account if none exists."""
+    if session.get('user_id'):
+        return redirect(url_for('user.user_dashboard'))
+        
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Find the latest user or create a guest
+    cursor.execute("SELECT * FROM users ORDER BY user_id DESC LIMIT 1")
+    user = cursor.fetchone()
+    
+    if user:
+        session['user_id'] = user['user_id']
+        session['user_name'] = user['name']
+        flash(f"Welcome back, {user['name']}!", "success")
+    else:
+        guest_pw = bcrypt.hashpw('guest123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cursor.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", 
+                       ('Guest User', 'guest@smartcart.com', guest_pw))
+        conn.commit()
+        session['user_id'] = cursor.lastrowid
+        session['user_name'] = 'Guest User'
+        flash("Guest account created and logged in.", "success")
+        
+    cursor.close()
+    conn.close()
+    session.modified = True
+    return redirect(url_for('user.user_dashboard'))
+
 
 # =================================================================
 # MAIN ENTRY & GLOBAL CONFIG (from app.py originals)
@@ -1140,5 +1264,7 @@ def index():
     return redirect(url_for('user.user_login'))
 
 if __name__ == '__main__':
+    # Initialize the database before starting the server
+    init_db()
     # Listen on all interfaces (0.0.0.0) so other devices in the network can access/scan
     app.run(host='0.0.0.0', port=5000, debug=True)

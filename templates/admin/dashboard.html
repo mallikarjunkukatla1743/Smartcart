@@ -29,8 +29,7 @@
                 <tr>
                     <td class="fw-bold">{{ p_admin.name }}</td>
                     <td>{{ p_admin.email }}</td>
-                    <td><small class="text-muted">{{ p_admin.created_at.strftime('%d %b, %H:%M') if p_admin.created_at
-                            else 'N/A' }}</small></td>
+                    <td><small class="text-muted">{{ p_admin.created_at|strftime('%d %b, %H:%M') }}</small></td>
                     <td class="text-end">
                         <a href="{{ url_for('admin.approve_admin', t_admin_id=p_admin.admin_id) }}"
                             class="btn btn-sm btn-success me-2">
@@ -158,7 +157,7 @@
                     </td>
                     <td>
                         <small class="text-muted">
-                            {{ adm.last_login.strftime('%H:%M:%S, %d %b') if adm.last_login else 'Never' }}
+                            {{ adm.last_login|strftime('%H:%M:%S, %d %b') }}
                         </small>
                     </td>
                     <td><span class="fw-semibold">{{ adm.prod_count }}</span> items</td>
@@ -243,7 +242,7 @@
                         </span>
                     </td>
                     <td class="text-muted small">
-                        {{ order.created_at.strftime('%d %b, %H:%M') if order.created_at else 'N/A' }}
+                        {{ order.created_at|strftime('%d %b, %H:%M') }}
                     </td>
                 </tr>
                 {% else %}
@@ -277,7 +276,7 @@
                 <tr>
                     <td class="fw-bold">{{ login.admin_name }}</td>
                     <td class="text-primary small">
-                        {{ login.login_time.strftime('%d %b, %H:%M:%S') if login.login_time else 'N/A' }}
+                        {{ login.login_time|strftime('%d %b, %H:%M:%S') }}
                     </td>
                     <td><small class="text-muted">{{ login.ip_address if login.ip_address else 'Unknown' }}</small></td>
                     <td>
