@@ -60,7 +60,7 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Initializes the database by creating necessary tables if they don't exist."""
+    """Initializes the database by creating all necessary tables if they don't exist."""
     conn = get_db_connection()
     cursor = conn.cursor()
     # Create contact_messages table (moved from update_db.py)
@@ -74,6 +74,22 @@ def init_db():
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     ''')
+
+    # 8. User Addresses Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS user_addresses (
+        address_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        full_name TEXT,
+        phone TEXT,
+        address_line TEXT,
+        city TEXT,
+        state TEXT,
+        pincode TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+    
     conn.commit()
     conn.close()
     print("Database initialized.")
@@ -1244,6 +1260,9 @@ def auto_login():
 # MAIN ENTRY & GLOBAL CONFIG (from app.py originals)
 # =================================================================
 
+# Initialize the database on startup (needed for PythonAnywhere/WSGI)
+init_db()
+
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 
@@ -1264,7 +1283,5 @@ def index():
     return redirect(url_for('user.user_login'))
 
 if __name__ == '__main__':
-    # Initialize the database before starting the server
-    init_db()
     # Listen on all interfaces (0.0.0.0) so other devices in the network can access/scan
     app.run(host='0.0.0.0', port=5000, debug=True)

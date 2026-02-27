@@ -9,7 +9,8 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "abc123")
 
 # Database Configuration (SQLite)
-DATABASE_URL = os.getenv("DATABASE_URL", "smartcart.db")
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DATABASE_URL = os.getenv("DATABASE_URL", os.path.join(BASE_DIR, "smartcart.db"))
 
 # Email SMTP Settings
 MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
