@@ -25,8 +25,9 @@
                     <i class="bi bi-search"></i>
                 </button>
                 {% if request.args.get('search_order') or request.args.get('status_filter') %}
-                <a href="{{ url_for('admin.all_orders') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-lg"></i>
+                <a href="{{ url_for('admin.all_orders', aid=request.args.get('aid') if request.args.get('aid') else session.get('admin_id')) }}"
+                    class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i> Clear
                 </a>
                 {% endif %}
             </div>

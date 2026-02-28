@@ -119,7 +119,8 @@
                     <i class="bi bi-search"></i>
                 </button>
                 {% if request.args.get('search_admin') or request.args.get('status_filter') %}
-                <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                <a href="{{ url_for('admin.admin_dashboard', aid=request.args.get('aid') if request.args.get('aid') else session.get('admin_id')) }}"
+                    class="btn btn-outline-secondary">
                     <i class="bi bi-x-lg"></i>
                 </a>
                 {% endif %}

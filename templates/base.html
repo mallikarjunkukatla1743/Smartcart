@@ -195,8 +195,13 @@
             <!-- Brand -->
             <a class="navbar-brand" href="{{ url_for('user.user_dashboard') }}">🛒 SmartCart</a>
 
-            <!-- Search & Filter Bar -->
-            <form action="{{ url_for('user.user_products') }}" method="GET" class="search-container d-none d-lg-flex">
+            <!-- Search & Filter Bar (Only show if logged in) -->
+            {% if session.get('user_id') %}
+            {% set search_action = url_for('user.user_products') %}
+            {% if request.endpoint == 'user.user_dashboard' %}
+            {% set search_action = url_for('user.user_dashboard') %}
+            {% endif %}
+            <form action="{{ search_action }}" method="GET" class="search-container d-none d-lg-flex">
                 <div class="input-group">
                     <input type="text" name="search" class="form-control search-input shadow-none"
                         placeholder="Search products..." value="{{ request.args.get('search', '') }}">
@@ -212,6 +217,7 @@
                     </button>
                 </div>
             </form>
+            {% endif %}
 
             <div class="d-flex align-items-center ms-auto">
                 {% if session.get('user_id') %}
@@ -283,12 +289,18 @@
         </div>
     </div>
 
-    <!-- Mobile Search (Visible only on small screens) -->
+    <!-- Mobile Search (Visible only on small screens and if logged in) -->
+    {% if session.get('user_id') %}
     <div class="container d-lg-none mt-3">
-        <form action="{{ url_for('user.user_products') }}" method="GET" class="w-100">
+        {% set mobile_search_action = url_for('user.user_products') %}
+        {% if request.endpoint == 'user.user_dashboard' %}
+        {% set mobile_search_action = url_for('user.user_dashboard') %}
+        {% endif %}
+        <form action="{{ mobile_search_action }}" method="GET" class="w-100">
             <div class="input-group">
                 <input type="text" name="search" class="form-control rounded-pill-start bg-light border-0 px-3"
-                    placeholder="Search..." style="border-radius: 20px 0 0 20px;">
+                    placeholder="Search..." style="border-radius: 20px 0 0 20px;"
+                    value="{{ request.args.get('search', '') }}">
                 <button class="btn btn-primary rounded-pill-end px-3" type="submit"
                     style="border-radius: 0 20px 20px 0;">
                     <i class="bi bi-search"></i>
@@ -296,6 +308,7 @@
             </div>
         </form>
     </div>
+    {% endif %}
 
     <div class="container my-4">
         {% with messages = get_flashed_messages(with_categories=true) %}

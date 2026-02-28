@@ -27,7 +27,12 @@
                 <button class="btn btn-primary px-4" type="submit">Apply Filters</button>
 
                 {% if request.args.get('search') or request.args.get('category') %}
-                <a href="{{ url_for('admin.item_list') }}" class="btn btn-outline-secondary">
+                {% set clear_url = url_for('admin.item_list') %}
+                {% if request.endpoint == 'admin.view_admin_inventory' %}
+                {% set clear_url = url_for('admin.view_admin_inventory', t_admin_id=request.view_args.get('t_admin_id'))
+                %}
+                {% endif %}
+                <a href="{{ clear_url }}" class="btn btn-outline-secondary">
                     <i class="bi bi-x-lg"></i> Clear
                 </a>
                 {% endif %}

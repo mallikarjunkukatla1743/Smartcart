@@ -211,12 +211,19 @@ def admin_session_guard():
     elif session_aid and str(session_aid) in session['admin_profiles']:
         # If no aid in URL, but a session exists, use that and then force redirect to include aid
         active_profile = session['admin_profiles'][str(session_aid)]
-        return redirect(url_for(request.endpoint, **request.view_args, aid=active_profile['admin_id']))
+        # Preserve existing query parameters (like search/filter) during redirect
+        query_params = request.args.to_dict()
+        query_params.update(request.view_args)
+        query_params['aid'] = active_profile['admin_id']
+        return redirect(url_for(request.endpoint, **query_params))
     elif session['admin_profiles']:
         # Default to the first available if no specific intent
         first_id = list(session['admin_profiles'].keys())[0]
-        active_profile = session['admin_profiles'][first_id]
-        return redirect(url_for(request.endpoint, **request.view_args, aid=first_id))
+        # Preserve existing query parameters during redirect
+        query_params = request.args.to_dict()
+        query_params.update(request.view_args)
+        query_params['aid'] = first_id
+        return redirect(url_for(request.endpoint, **query_params))
     
     if not active_profile:
         return redirect(url_for('admin.admin_login'))
@@ -865,18 +872,84 @@ def admin_reset_password():
 # SECTION: USER ROUTES (from user.py)
 # =================================================================
 
-# 24. User Registration Route: Handles new student/customer account creation
+# 24. User Registration Route: Handles initial registration input and sends OTP
 @user_bp.route('/user/register', methods=['GET', 'POST'])
 def user_register():
     if request.method == 'GET': return render_template("user/user_register.html")
-    name, email, password = request.form['name'], request.form['email'], request.form['password']
-    conn = get_db_connection(); cursor = conn.cursor()
+    
+    name = request.form['name']
+    email = request.form['email']
+    password = request.form['password']
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE email=?", (email,))
-    if cursor.fetchone(): flash("Registered!", "danger"); return redirect(url_for('user.user_register'))
-    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    cursor.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, hashed))
-    conn.commit(); cursor.close(); conn.close()
-    flash("Success!", "success"); return redirect(url_for('user.user_login'))
+    if cursor.fetchone(): 
+        cursor.close(); conn.close()
+        flash("Email already registered! Please login.", "danger")
+        return redirect(url_for('user.user_login'))
+    
+    cursor.close(); conn.close()
+    
+    # Generate OTP
+    otp = random.randint(100000, 999999)
+    
+    # Store registration info in session
+    session['user_signup_name'] = name
+    session['user_signup_email'] = email
+    # Hash password before storing in session for better security
+    session['user_signup_password'] = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    session['user_signup_otp'] = str(otp)
+    
+    # Send OTP mail
+    try:
+        msg = Message(
+            subject="Verification Code - SmartCart",
+            sender=config.MAIL_USERNAME,
+            recipients=[email]
+        )
+        msg.body = f"Hello {name},\n\nYour SmartCart registration OTP is: {otp}\n\nPlease enter this code to complete your registration.\n\nThank you!"
+        mail.send(msg)
+        flash("Verification code sent to your email!", "info")
+        return redirect(url_for('user.user_verify_register_otp'))
+    except Exception as e:
+        print(f"Mail error: {e}")
+        flash("Error sending email. Please try again.", "danger")
+        return redirect(url_for('user.user_register'))
+
+# 24b. User Verify OTP Route: Validates the registration code and creates the user account
+@user_bp.route('/user/verify-registration', methods=['GET', 'POST'])
+def user_verify_register_otp():
+    if 'user_signup_email' not in session:
+        return redirect(url_for('user.user_register'))
+        
+    if request.method == 'GET':
+        return render_template("user/verify_registration_otp.html")
+        
+    user_otp = request.form.get('otp')
+    if str(user_otp) == str(session.get('user_signup_otp')):
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", 
+                           (session['user_signup_name'], session['user_signup_email'], session['user_signup_password']))
+            conn.commit()
+            cursor.close(); conn.close()
+            
+            # Clear signup session data
+            session.pop('user_signup_name', None)
+            session.pop('user_signup_email', None)
+            session.pop('user_signup_password', None)
+            session.pop('user_signup_otp', None)
+            
+            flash("Registration successful! You can now login.", "success")
+            return redirect(url_for('user.user_login'))
+        except Exception as e:
+            flash(f"Error during registration: {e}", "danger")
+            return redirect(url_for('user.user_register'))
+    else:
+        flash("Invalid OTP! Please try again.", "danger")
+        return render_template("user/verify_registration_otp.html")
 
 # 25. User Login Route: Authenticates customer credentials and establishes user sessions
 @user_bp.route('/user/login', methods=['GET', 'POST'])
