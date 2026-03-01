@@ -50,9 +50,10 @@ app.config['MAIL_DEFAULT_SENDER'] = config.MAIL_DEFAULT_SENDER
 
 mail = Mail(app)
 
+# Re-init Razorpay with cleaned strings
 import razorpay
 razorpay_client = razorpay.Client(
-    auth=(os.getenv("RAZORPAY_KEY_ID", "").strip(), os.getenv("RAZORPAY_KEY_SECRET", "").strip())
+    auth=(config.RAZORPAY_KEY_ID, config.RAZORPAY_KEY_SECRET)
 )
 
 def get_db_connection():
@@ -380,7 +381,7 @@ def admin_signup():
     try:
         message = Message(
             subject="SmartCart Admin OTP",
-            sender=config.MAIL_USERNAME,
+            sender=app.config['MAIL_DEFAULT_SENDER'],
             recipients=[email]
         )
         message.body = f"Your OTP for SmartCart Admin Registration is: {otp}"
@@ -388,8 +389,8 @@ def admin_signup():
         flash("OTP sent to your email!", "success")
         return redirect(url_for('admin.verify_otp_get'))
     except Exception as e:
-        print(f"Admin Mail Error: {e}")
-        flash("Error sending verification email. Please check your config.", "danger")
+        print(f"DEBUG: Admin Mail Error: {e}")
+        flash(f"Error sending verification email. Check if your mail port ({app.config['MAIL_PORT']}) is correct.", "danger")
         return redirect(url_for('admin.admin_signup'))
 
 # 2. OTP Page Route: Displays the verification form for the registration OTP
@@ -1027,7 +1028,7 @@ def user_register():
     try:
         msg = Message(
             subject="Verification Code - SmartCart",
-            sender=config.MAIL_USERNAME,
+            sender=app.config['MAIL_DEFAULT_SENDER'],
             recipients=[email]
         )
         msg.body = f"Hello {name},\n\nYour SmartCart registration OTP is: {otp}\n\nPlease enter this code to complete your registration.\n\nThank you!"
@@ -1035,8 +1036,8 @@ def user_register():
         flash("Verification code sent to your email!", "info")
         return redirect(url_for('user.user_verify_register_otp'))
     except Exception as e:
-        print(f"Mail error: {e}")
-        flash("Error sending email. Please try again.", "danger")
+        print(f"DEBUG: User Register Mail error: {e}")
+        flash("Could not send verification email. Ensure your MAIL_PASSWORD is a Google App Password.", "danger")
         return redirect(url_for('user.user_register'))
 
 # 24b. User Verify OTP Route: Validates the registration code and creates the user account
