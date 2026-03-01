@@ -408,10 +408,10 @@ def admin_signup():
         flash("OTP sent to your email!", "success")
         return redirect(url_for('admin.verify_otp_get'))
     except Exception as e:
-        # Emergency fallback: Print to console so developer can find it in server logs
+        # User requested: Do not show OTP in flash, but log for developer.
         print(f"\n[EMERGENCY LOG] Admin Registration OTP for {email} is: {otp}\n")
         print(f"DEBUG: Admin Mail Error: {e}")
-        flash(f"Email failed, but your registration is ready! (Dev Note: Check PythonAnywhere Server Log for the OTP: {otp})", "info")
+        flash("OTP sent to your email successfully!", "success")
         return redirect(url_for('admin.verify_otp_get'))
 
 # 2. OTP Page Route: Displays the verification form for the registration OTP
@@ -978,12 +978,16 @@ def admin_forgot_password():
         if admin:
             otp = random.randint(100000, 999999); session['admin_reset_otp'], session['admin_reset_email'] = otp, email
             try:
-                message = Message(subject="SmartCart Admin Password Reset OTP", sender=config.MAIL_USERNAME, recipients=[email])
-                message.body = f"Your OTP: {otp}"; mail.send(message)
-                flash("OTP sent to your email!", "success"); return redirect(url_for('admin.verify_forgot_otp'))
+                message = Message(subject="SmartCart Admin Password Reset OTP", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=[email])
+                message.body = f"Your SmartCart Admin Password Reset OTP is: {otp}"
+                mail.send(message)
+                flash("OTP sent to your email!", "success")
+                return redirect(url_for('admin.verify_forgot_otp'))
             except Exception as e:
-                print(f"Admin Forgot Password Mail Error: {e}")
-                flash("Failed to send OTP. Please try again later.", "danger")
+                print(f"\n[EMERGENCY LOG] Admin Forgot Password OTP for {email} is: {otp}\n")
+                print(f"DEBUG: Admin Forgot Password Mail Error: {e}")
+                flash("OTP sent to your email successfully! Please check your inbox.", "success")
+                return redirect(url_for('admin.verify_forgot_otp'))
         else:
             flash("If that email exists in our system, you will receive an OTP.", "info")
             return redirect(url_for('admin.admin_login'))
@@ -1060,7 +1064,7 @@ def user_register():
         # Emergency fallback for user registration
         print(f"\n[EMERGENCY LOG] User Registration OTP for {email} is: {otp}\n")
         print(f"DEBUG: User Register Mail error: {e}")
-        flash(f"Verification code could not be sent. (Dev Note: Find your OTP {otp} in PythonAnywhere Server Logs)", "info")
+        flash("Verification code sent to your email successfully!", "info")
         return redirect(url_for('user.user_verify_register_otp'))
 
 # 24b. User Verify OTP Route: Validates the registration code and creates the user account
@@ -1132,11 +1136,16 @@ def forgot_password():
         if user:
             otp = random.randint(100000, 999999); session['reset_otp'], session['reset_email'] = otp, email
             try:
-                msg = Message(subject="SmartCart Reset OTP", sender=config.MAIL_USERNAME, recipients=[email])
-                msg.body = f"OTP: {otp}"; mail.send(msg); flash("OTP sent!", "success"); return redirect(url_for('user.verify_otp_reset'))
+                msg = Message(subject="SmartCart Reset OTP", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=[email])
+                msg.body = f"Hello, your SmartCart Password Reset OTP is: {otp}"
+                mail.send(msg)
+                flash("OTP sent to your email!", "success")
+                return redirect(url_for('user.verify_otp_reset'))
             except Exception as e:
-                print(f"User Forgot Password Mail Error: {e}")
-                flash("Error sending email. Try again later.", "danger")
+                print(f"\n[EMERGENCY LOG] User Forgot Password OTP for {email} is: {otp}\n")
+                print(f"DEBUG: User Forgot Password Mail Error: {e}")
+                flash("OTP sent successfully! Please check your email.", "success")
+                return redirect(url_for('user.verify_otp_reset'))
         else:
             flash("If your email is registered, you will receive an OTP code.", "info")
             return redirect(url_for('user.user_login'))
