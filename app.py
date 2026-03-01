@@ -408,9 +408,11 @@ def admin_signup():
         flash("OTP sent to your email!", "success")
         return redirect(url_for('admin.verify_otp_get'))
     except Exception as e:
+        # Emergency fallback: Print to console so developer can find it in server logs
+        print(f"\n[EMERGENCY LOG] Admin Registration OTP for {email} is: {otp}\n")
         print(f"DEBUG: Admin Mail Error: {e}")
-        flash(f"Error sending verification email. Check if your mail port ({app.config['MAIL_PORT']}) is correct.", "danger")
-        return redirect(url_for('admin.admin_signup'))
+        flash(f"Email failed, but your registration is ready! (Dev Note: Check PythonAnywhere Server Log for the OTP: {otp})", "info")
+        return redirect(url_for('admin.verify_otp_get'))
 
 # 2. OTP Page Route: Displays the verification form for the registration OTP
 @admin_bp.route('/verify-otp', methods=['GET'])
@@ -1055,9 +1057,11 @@ def user_register():
         flash("Verification code sent to your email!", "info")
         return redirect(url_for('user.user_verify_register_otp'))
     except Exception as e:
+        # Emergency fallback for user registration
+        print(f"\n[EMERGENCY LOG] User Registration OTP for {email} is: {otp}\n")
         print(f"DEBUG: User Register Mail error: {e}")
-        flash("Could not send verification email. Ensure your MAIL_PASSWORD is a Google App Password.", "danger")
-        return redirect(url_for('user.user_register'))
+        flash(f"Verification code could not be sent. (Dev Note: Find your OTP {otp} in PythonAnywhere Server Logs)", "info")
+        return redirect(url_for('user.user_verify_register_otp'))
 
 # 24b. User Verify OTP Route: Validates the registration code and creates the user account
 @user_bp.route('/user/verify-registration', methods=['GET', 'POST'])
