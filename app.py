@@ -52,7 +52,7 @@ mail = Mail(app)
 
 import razorpay
 razorpay_client = razorpay.Client(
-    auth=(str(config.RAZORPAY_KEY_ID).strip(), str(config.RAZORPAY_KEY_SECRET).strip())
+    auth=(os.getenv("RAZORPAY_KEY_ID", "").strip(), os.getenv("RAZORPAY_KEY_SECRET", "").strip())
 )
 
 def get_db_connection():

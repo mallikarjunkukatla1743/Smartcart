@@ -77,6 +77,25 @@
             document.body.appendChild(form);
             form.submit();
         },
+        "config": {
+            "display": {
+                "blocks": {
+                    "upi": {
+                        "name": "Pay via UPI / QR",
+                        "instruments": [
+                            {
+                                "method": "upi",
+                                "apps": ["google_pay", "phonepe", "paytm"]
+                            }
+                        ]
+                    }
+                },
+                "sequence": ["block.upi"],
+                "preferences": {
+                    "show_default_blocks": true
+                }
+            }
+        },
         "theme": { "color": "#0d6efd" }
     };
     var rzp = new Razorpay(options);
