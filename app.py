@@ -57,15 +57,26 @@ razorpay_client = razorpay.Client(
 )
 
 def get_db_connection():
-    conn = sqlite3.connect(config.DATABASE_URL, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
-    conn.row_factory = sqlite3.Row  # This makes rows behave like dictionaries
+    # Adding timeout and isolation level to prevent "Database Locked" errors on PythonAnywhere
+    conn = sqlite3.connect(config.DATABASE_URL, timeout=10, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+    conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    """Initializes the database by creating all necessary tables if they don't exist."""
+    """Initializes the database and performs repairs/migrations for missing columns."""
     conn = get_db_connection()
+    # Ensure foreign keys are enabled
+    conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     
+    # helper for migrations
+    def add_column_if_missing(table, column, definition):
+        try:
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+            print(f"Migration: Added {column} to {table}")
+        except sqlite3.OperationalError:
+            pass # Column already exists
+
     # 1. Admin Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS admin (
@@ -82,6 +93,10 @@ def init_db():
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     ''')
+    add_column_if_missing('admin', 'status', "TEXT DEFAULT 'pending'")
+    add_column_if_missing('admin', 'is_super', "INTEGER DEFAULT 0")
+    add_column_if_missing('admin', 'deletion_requested', "INTEGER DEFAULT 0")
+    add_column_if_missing('admin', 'session_token', "TEXT")
 
     # 2. Users Table
     cursor.execute('''
@@ -93,6 +108,7 @@ def init_db():
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     ''')
+    add_column_if_missing('users', 'created_at', "DATETIME DEFAULT CURRENT_TIMESTAMP")
 
     # 3. Products Table
     cursor.execute('''
@@ -110,6 +126,9 @@ def init_db():
         FOREIGN KEY (admin_id) REFERENCES admin (admin_id)
     )
     ''')
+    add_column_if_missing('products', 'is_active', "INTEGER DEFAULT 1")
+    add_column_if_missing('products', 'stock', "INTEGER DEFAULT 0")
+    add_column_if_missing('products', 'created_at', "DATETIME DEFAULT CURRENT_TIMESTAMP")
 
     # 4. Orders Table
     cursor.execute('''
@@ -183,7 +202,7 @@ def init_db():
     
     conn.commit()
     conn.close()
-    print("Database initialized.")
+    print("Database initialized and verified.")
 
 
 # ---------------------------------------------------------
