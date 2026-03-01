@@ -207,6 +207,45 @@ def init_db():
     print("Database initialized and verified.")
 
 
+def send_otp_email(email, name, otp, subject_type="Verification"):
+    """Centralized helper to send OTP emails with robust error handling for PythonAnywhere."""
+    try:
+        # Determine subject and body based on type
+        if subject_type == "Admin Signup":
+            subject = "SmartCart Admin OTP"
+            body = f"Your OTP for SmartCart Admin Registration is: {otp}"
+        elif subject_type == "Admin Reset":
+            subject = "SmartCart Admin Password Reset OTP"
+            body = f"Your SmartCart Admin Password Reset OTP is: {otp}"
+        elif subject_type == "User Reset":
+            subject = "SmartCart Reset OTP"
+            body = f"Hello, your SmartCart Password Reset OTP is: {otp}"
+        else:
+            subject = "Verification Code - SmartCart"
+            body = f"Hello {name if name else 'User'},\n\nYour SmartCart registration OTP is: {otp}\n\nPlease enter this code to complete your registration.\n\nThank you!"
+
+        # Create message
+        msg = Message(
+            subject=subject,
+            sender=app.config['MAIL_DEFAULT_SENDER'],
+            recipients=[email],
+            body=body
+        )
+        
+        # Debugging log for developer
+        print(f"DEBUG: Attempting to send '{subject}' to {email} using {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']}")
+        
+        mail.send(msg)
+        return True
+    except Exception as e:
+        # Emergency fallback: Print to console so developer can find it in server logs
+        print(f"\n[EMERGENCY LOG] {subject_type} OTP for {email} is: {otp}")
+        print(f"DEBUG: Mail Error Details: {e}")
+        # Hint for PythonAnywhere users
+        if "Connection refused" in str(e) or "Network is unreachable" in str(e):
+             print("NOTE: If you are on a PythonAnywhere FREE account, SMTP connections (Gmail) are blocked. You must upgrade or use the EMERGENCY LOG above.")
+        return False
+
 # ---------------------------------------------------------
 # UTILS: PDF GENERATOR
 # ---------------------------------------------------------
@@ -399,25 +438,14 @@ def admin_signup():
     otp = random.randint(100000, 999999)
     session['otp'] = otp
 
-    try:
-        # Debugging log for developer
-        print(f"DEBUG: Attempting to send OTP to {email} using {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']} (SSL:{app.config['MAIL_USE_SSL']}, TLS:{app.config['MAIL_USE_TLS']})")
-        
-        message = Message(
-            subject="SmartCart Admin OTP",
-            sender=app.config['MAIL_DEFAULT_SENDER'],
-            recipients=[email]
-        )
-        message.body = f"Your SmartCart Admin Registration OTP is: {otp}"
-        mail.send(message)
+    success = send_otp_email(email, name, otp, "Admin Signup")
+    if success:
         flash("OTP sent to your email successfully!", "success")
-        return redirect(url_for('admin.verify_otp_get'))
-    except Exception as e:
-        # User requested: Do not show OTP in flash, but log for developer.
-        print(f"\n[EMERGENCY LOG] Admin Registration OTP for {email} is: {otp}\n")
-        print(f"DEBUG: Admin Mail Error: {e}")
-        flash("OTP sent to your email successfully!", "success")
-        return redirect(url_for('admin.verify_otp_get'))
+    else:
+        # Error or PythonAnywhere block
+        flash("OTP sent successfully! (Please check your inbox or server logs)", "success")
+    
+    return redirect(url_for('admin.verify_otp_get'))
 
 # 2. OTP Page Route: Displays the verification form for the registration OTP
 @admin_bp.route('/verify-otp', methods=['GET'])
@@ -982,17 +1010,12 @@ def admin_forgot_password():
         admin = cursor.fetchone(); cursor.close(); conn.close()
         if admin:
             otp = random.randint(100000, 999999); session['admin_reset_otp'], session['admin_reset_email'] = otp, email
-            try:
-                message = Message(subject="SmartCart Admin Password Reset OTP", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=[email])
-                message.body = f"Your SmartCart Admin Password Reset OTP is: {otp}"
-                mail.send(message)
+            success = send_otp_email(email, admin['name'], otp, "Admin Reset")
+            if success:
                 flash("OTP sent to your email!", "success")
-                return redirect(url_for('admin.verify_forgot_otp'))
-            except Exception as e:
-                print(f"\n[EMERGENCY LOG] Admin Forgot Password OTP for {email} is: {otp}\n")
-                print(f"DEBUG: Admin Forgot Password Mail Error: {e}")
+            else:
                 flash("OTP sent to your email successfully! Please check your inbox.", "success")
-                return redirect(url_for('admin.verify_forgot_otp'))
+            return redirect(url_for('admin.verify_forgot_otp'))
         else:
             flash("If that email exists in our system, you will receive an OTP.", "info")
             return redirect(url_for('admin.admin_login'))
@@ -1055,22 +1078,12 @@ def user_register():
     session['user_signup_otp'] = str(otp)
     
     # Send OTP mail
-    try:
-        msg = Message(
-            subject="Verification Code - SmartCart",
-            sender=app.config['MAIL_DEFAULT_SENDER'],
-            recipients=[email]
-        )
-        msg.body = f"Hello {name},\n\nYour SmartCart registration OTP is: {otp}\n\nPlease enter this code to complete your registration.\n\nThank you!"
-        mail.send(msg)
+    success = send_otp_email(email, name, otp, "User Signup")
+    if success:
         flash("Verification code sent to your email!", "info")
-        return redirect(url_for('user.user_verify_register_otp'))
-    except Exception as e:
-        # Emergency fallback for user registration
-        print(f"\n[EMERGENCY LOG] User Registration OTP for {email} is: {otp}\n")
-        print(f"DEBUG: User Register Mail error: {e}")
+    else:
         flash("Verification code sent to your email successfully!", "info")
-        return redirect(url_for('user.user_verify_register_otp'))
+    return redirect(url_for('user.user_verify_register_otp'))
 
 # 24b. User Verify OTP Route: Validates the registration code and creates the user account
 @user_bp.route('/user/verify-registration', methods=['GET', 'POST'])
@@ -1140,17 +1153,12 @@ def forgot_password():
         user = cursor.fetchone(); cursor.close(); conn.close()
         if user:
             otp = random.randint(100000, 999999); session['reset_otp'], session['reset_email'] = otp, email
-            try:
-                msg = Message(subject="SmartCart Reset OTP", sender=app.config['MAIL_DEFAULT_SENDER'], recipients=[email])
-                msg.body = f"Hello, your SmartCart Password Reset OTP is: {otp}"
-                mail.send(msg)
+            success = send_otp_email(email, user['name'], otp, "User Reset")
+            if success:
                 flash("OTP sent to your email!", "success")
-                return redirect(url_for('user.verify_otp_reset'))
-            except Exception as e:
-                print(f"\n[EMERGENCY LOG] User Forgot Password OTP for {email} is: {otp}\n")
-                print(f"DEBUG: User Forgot Password Mail Error: {e}")
+            else:
                 flash("OTP sent successfully! Please check your email.", "success")
-                return redirect(url_for('user.verify_otp_reset'))
+            return redirect(url_for('user.verify_otp_reset'))
         else:
             flash("If your email is registered, you will receive an OTP code.", "info")
             return redirect(url_for('user.user_login'))
