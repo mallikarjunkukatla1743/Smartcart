@@ -40,6 +40,7 @@ def add_header(response):
 # ---------------------------------------------------------
 # DATABASE & EXTENSIONS CONFIGURATION
 # ---------------------------------------------------------
+# Robust Mail Initializer
 app.config['MAIL_SERVER'] = config.MAIL_SERVER
 app.config['MAIL_PORT'] = config.MAIL_PORT
 app.config['MAIL_USE_TLS'] = config.MAIL_USE_TLS
@@ -47,6 +48,7 @@ app.config['MAIL_USE_SSL'] = getattr(config, 'MAIL_USE_SSL', False)
 app.config['MAIL_USERNAME'] = config.MAIL_USERNAME
 app.config['MAIL_PASSWORD'] = config.MAIL_PASSWORD
 app.config['MAIL_DEFAULT_SENDER'] = config.MAIL_DEFAULT_SENDER
+app.config['MAIL_ASCII_ATTACHMENTS'] = True # Better for some mail servers
 
 mail = Mail(app)
 
@@ -398,14 +400,17 @@ def admin_signup():
     session['otp'] = otp
 
     try:
+        # Debugging log for developer
+        print(f"DEBUG: Attempting to send OTP to {email} using {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']} (SSL:{app.config['MAIL_USE_SSL']}, TLS:{app.config['MAIL_USE_TLS']})")
+        
         message = Message(
             subject="SmartCart Admin OTP",
             sender=app.config['MAIL_DEFAULT_SENDER'],
             recipients=[email]
         )
-        message.body = f"Your OTP for SmartCart Admin Registration is: {otp}"
+        message.body = f"Your SmartCart Admin Registration OTP is: {otp}"
         mail.send(message)
-        flash("OTP sent to your email!", "success")
+        flash("OTP sent to your email successfully!", "success")
         return redirect(url_for('admin.verify_otp_get'))
     except Exception as e:
         # User requested: Do not show OTP in flash, but log for developer.
