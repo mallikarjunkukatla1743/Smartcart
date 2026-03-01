@@ -43,6 +43,7 @@ def add_header(response):
 app.config['MAIL_SERVER'] = config.MAIL_SERVER
 app.config['MAIL_PORT'] = config.MAIL_PORT
 app.config['MAIL_USE_TLS'] = config.MAIL_USE_TLS
+app.config['MAIL_USE_SSL'] = getattr(config, 'MAIL_USE_SSL', False)
 app.config['MAIL_USERNAME'] = config.MAIL_USERNAME
 app.config['MAIL_PASSWORD'] = config.MAIL_PASSWORD
 app.config['MAIL_DEFAULT_SENDER'] = config.MAIL_DEFAULT_SENDER
@@ -1299,7 +1300,10 @@ def user_pay():
     try:
         razor_order = razorpay_client.order.create({"amount": int(total * 100), "currency": "INR", "receipt": f"rcpt_{session['user_id']}_{random.randint(1000, 9999)}", "payment_capture": 1})
         return render_template('user/payment.html', order_id=razor_order['id'], amount=total, key_id=config.RAZORPAY_KEY_ID)
-    except: return redirect(url_for('user.view_cart'))
+    except Exception as e: 
+        print(f"Razorpay order Error: {e}")
+        flash(f"Payment gateway error. Please try again later. (Is your .env correctly configured?)", "danger")
+        return redirect(url_for('user.view_cart'))
 
 def _create_order_in_db(uid, cart, payment_status, razor_oid, razor_pid=None):
     conn = get_db_connection()
@@ -1348,7 +1352,10 @@ def verify_payment():
         oid = _create_order_in_db(session['user_id'], session['cart'], 'Paid', ro, rp)
         send_order_email(oid)
         return redirect(url_for('user.order_success', order_db_id=oid))
-    except: return redirect(url_for('user.view_cart'))
+    except Exception as e: 
+        print(f"Razorpay verification Error: {e}")
+        flash("Unauthorized or Invalid payment attempted!", "danger")
+        return redirect(url_for('user.view_cart'))
 
 # 45. Final Checkout Success: Displays a confirmation of the order and the unique order ID
 @user_bp.route('/user/order-success/<int:order_db_id>')
