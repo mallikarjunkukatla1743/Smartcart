@@ -63,7 +63,95 @@ def init_db():
     """Initializes the database by creating all necessary tables if they don't exist."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    # Create contact_messages table (moved from update_db.py)
+    
+    # 1. Admin Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS admin (
+        admin_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT UNIQUE,
+        password TEXT,
+        profile_image TEXT,
+        status TEXT DEFAULT 'pending',
+        is_super INTEGER DEFAULT 0,
+        deletion_requested INTEGER DEFAULT 0,
+        last_login DATETIME,
+        session_token TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
+    # 2. Users Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT UNIQUE,
+        password TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
+    # 3. Products Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS products (
+        product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        description TEXT,
+        category TEXT,
+        price REAL,
+        stock INTEGER DEFAULT 0,
+        image TEXT,
+        admin_id INTEGER,
+        is_active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (admin_id) REFERENCES admin (admin_id)
+    )
+    ''')
+
+    # 4. Orders Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS orders (
+        order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        amount REAL,
+        payment_status TEXT,
+        razorpay_order_id TEXT,
+        razorpay_payment_id TEXT,
+        shipping_address TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (user_id)
+    )
+    ''')
+
+    # 5. Order Items Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS order_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER,
+        product_id INTEGER,
+        product_name TEXT,
+        quantity INTEGER,
+        price REAL,
+        FOREIGN KEY (order_id) REFERENCES orders (order_id),
+        FOREIGN KEY (product_id) REFERENCES products (product_id)
+    )
+    ''')
+
+    # 6. Login Logs Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS login_logs (
+        log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        admin_id INTEGER,
+        admin_name TEXT,
+        login_time DATETIME,
+        browser TEXT,
+        ip_address TEXT,
+        FOREIGN KEY (admin_id) REFERENCES admin (admin_id)
+    )
+    ''')
+
+    # 7. Contact Messages Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS contact_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +174,8 @@ def init_db():
         city TEXT,
         state TEXT,
         pincode TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (user_id)
     )
     ''')
     
