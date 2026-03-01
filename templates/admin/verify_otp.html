@@ -16,7 +16,14 @@
 
             <div class="mb-3">
                 <label class="form-label small fw-bold">Set Password</label>
-                <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                <div class="input-group">
+                    <input type="password" name="password" id="admin_reg_pw" class="form-control" required
+                        placeholder="••••••••">
+                    <button class="btn btn-outline-secondary" type="button"
+                        onclick="togglePassword('admin_reg_pw', 'eye_icon_reg')">
+                        <i class="bi bi-eye" id="eye_icon_reg"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="mb-4">

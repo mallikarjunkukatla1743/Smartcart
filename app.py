@@ -376,16 +376,20 @@ def admin_signup():
     otp = random.randint(100000, 999999)
     session['otp'] = otp
 
-    message = Message(
-        subject="SmartCart Admin OTP",
-        sender=config.MAIL_USERNAME,
-        recipients=[email]
-    )
-    message.body = f"Your OTP for SmartCart Admin Registration is: {otp}"
-    mail.send(message)
-
-    flash("OTP sent to your email!", "success")
-    return redirect(url_for('admin.verify_otp_get'))
+    try:
+        message = Message(
+            subject="SmartCart Admin OTP",
+            sender=config.MAIL_USERNAME,
+            recipients=[email]
+        )
+        message.body = f"Your OTP for SmartCart Admin Registration is: {otp}"
+        mail.send(message)
+        flash("OTP sent to your email!", "success")
+        return redirect(url_for('admin.verify_otp_get'))
+    except Exception as e:
+        print(f"Admin Mail Error: {e}")
+        flash("Error sending verification email. Please check your config.", "danger")
+        return redirect(url_for('admin.admin_signup'))
 
 # 2. OTP Page Route: Displays the verification form for the registration OTP
 @admin_bp.route('/verify-otp', methods=['GET'])
@@ -414,8 +418,19 @@ def verify_otp_post():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO admin (name, email, password, profile_image, status) VALUES (?, ?, ?, ?, ?)",
-            (session['signup_name'], session['signup_email'], hashed_password, image_filename, 'pending')
+        
+        # Check if this is the first admin ever registered
+        cursor.execute("SELECT COUNT(*) as count FROM admin")
+        admin_count = cursor.fetchone()['count']
+        
+        status = 'pending'
+        is_super = 0
+        if admin_count == 0:
+            status = 'active'
+            is_super = 1
+            
+        cursor.execute("INSERT INTO admin (name, email, password, profile_image, status, is_super) VALUES (?, ?, ?, ?, ?, ?)",
+            (session['signup_name'], session['signup_email'], hashed_password, image_filename, status, is_super)
         )
         conn.commit()
         cursor.close()
@@ -425,7 +440,11 @@ def verify_otp_post():
         session.pop('signup_name', None)
         session.pop('signup_email', None)
 
-        flash("Registration successful! Your account is pending Super Admin approval.", "info")
+        if is_super:
+            flash("Registration successful! As the first administrator, you have been granted Super Admin access and activated automatically.", "success")
+        else:
+            flash("Registration successful! Your account is pending Super Admin approval.", "info")
+            
         return redirect(url_for('admin.admin_login'))
 
     except Exception as e:
@@ -447,7 +466,13 @@ def admin_login():
         conn.close()
 
         if admin:
-            if (bcrypt.checkpw(password.encode('utf-8'), admin['password'].encode('utf-8')) or password == admin['password']):
+            db_password = admin['password']
+            if isinstance(db_password, str): 
+                db_password_encoded = db_password.encode('utf-8')
+            else:
+                db_password_encoded = db_password
+
+            if (bcrypt.checkpw(password.encode('utf-8'), db_password_encoded) or password == db_password):
                 if admin['status'] != 'active' and not admin['is_super']:
                     flash("Your account is pending approval by the Super Admin.", "warning")
                     return render_template('admin/admin_login.html')
@@ -929,9 +954,16 @@ def admin_forgot_password():
         admin = cursor.fetchone(); cursor.close(); conn.close()
         if admin:
             otp = random.randint(100000, 999999); session['admin_reset_otp'], session['admin_reset_email'] = otp, email
-            message = Message(subject="SmartCart Admin Password Reset OTP", sender=config.MAIL_USERNAME, recipients=[email])
-            message.body = f"Your OTP: {otp}"; mail.send(message)
-            flash("OTP sent!", "success"); return redirect(url_for('admin.verify_forgot_otp'))
+            try:
+                message = Message(subject="SmartCart Admin Password Reset OTP", sender=config.MAIL_USERNAME, recipients=[email])
+                message.body = f"Your OTP: {otp}"; mail.send(message)
+                flash("OTP sent to your email!", "success"); return redirect(url_for('admin.verify_forgot_otp'))
+            except Exception as e:
+                print(f"Admin Forgot Password Mail Error: {e}")
+                flash("Failed to send OTP. Please try again later.", "danger")
+        else:
+            flash("If that email exists in our system, you will receive an OTP.", "info")
+            return redirect(url_for('admin.admin_login'))
     return render_template('admin/forgot_password.html')
 
 # 22. Reset OTP Verification Route: Validates the password recovery OTP for admins
@@ -1054,7 +1086,7 @@ def user_login():
             if isinstance(db_password, str):
                 db_password = db_password.encode('utf-8')
                 
-            if bcrypt.checkpw(password.encode('utf-8'), db_password):
+            if (bcrypt.checkpw(password.encode('utf-8'), db_password) or password == user['password']):
                 session['user_id'], session['user_name'] = user['user_id'], user['name']
                 flash("Welcome!", "success"); return redirect(url_for('user.user_dashboard'))
             else:
@@ -1074,8 +1106,15 @@ def forgot_password():
         user = cursor.fetchone(); cursor.close(); conn.close()
         if user:
             otp = random.randint(100000, 999999); session['reset_otp'], session['reset_email'] = otp, email
-            msg = Message(subject="SmartCart Reset OTP", sender=config.MAIL_USERNAME, recipients=[email])
-            msg.body = f"OTP: {otp}"; mail.send(msg); return redirect(url_for('user.verify_otp_reset'))
+            try:
+                msg = Message(subject="SmartCart Reset OTP", sender=config.MAIL_USERNAME, recipients=[email])
+                msg.body = f"OTP: {otp}"; mail.send(msg); flash("OTP sent!", "success"); return redirect(url_for('user.verify_otp_reset'))
+            except Exception as e:
+                print(f"User Forgot Password Mail Error: {e}")
+                flash("Error sending email. Try again later.", "danger")
+        else:
+            flash("If your email is registered, you will receive an OTP code.", "info")
+            return redirect(url_for('user.user_login'))
     return render_template('user/forgot_password.html')
 
 # 27. User OTP Check Route: Verifies the recovery OTP for customer accounts

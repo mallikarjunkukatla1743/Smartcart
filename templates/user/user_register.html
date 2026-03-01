@@ -18,7 +18,13 @@
       <input type="email" name="email" required>
 
       <label>Password:</label>
-      <input type="password" name="password" required>
+      <div class="input-group mb-3">
+        <input type="password" name="password" id="user_reg_pw" class="form-control" style="border-radius: 5px 0 0 5px;"
+          required>
+        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('user_reg_pw', 'eye_user_reg')">
+          <i class="bi bi-eye" id="eye_user_reg"></i>
+        </button>
+      </div>
 
       <button type="submit">Register</button>
     </form>

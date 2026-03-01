@@ -49,8 +49,12 @@
                                 <span class="input-group-text bg-light border-end-0"><i
                                         class="bi bi-shield-lock text-primary"></i></span>
                                 <input type="password" class="form-control bg-light border-start-0 py-2 ps-0"
-                                    id="password" name="password" placeholder="New password (optional)"
+                                    id="profile_password" name="password" placeholder="New password (optional)">
+                                <button class="btn btn-light border border-start-0" type="button"
+                                    onclick="togglePassword('profile_password', 'eye_profile')"
                                     style="border-radius: 0 10px 10px 0;">
+                                    <i class="bi bi-eye" id="eye_profile"></i>
+                                </button>
                             </div>
                         </div>
 

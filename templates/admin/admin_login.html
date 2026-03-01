@@ -22,7 +22,14 @@
                     <a href="{{ url_for('admin.admin_forgot_password') }}"
                         class="small text-primary text-decoration-none">Forgot Password?</a>
                 </div>
-                <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                <div class="input-group">
+                    <input type="password" name="password" id="admin_password" class="form-control" required
+                        placeholder="••••••••">
+                    <button class="btn btn-outline-secondary" type="button"
+                        onclick="togglePassword('admin_password', 'eye_icon')">
+                        <i class="bi bi-eye" id="eye_icon"></i>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mt-3">Login as Admin</button>
 

@@ -55,6 +55,20 @@
                     btn.innerHTML = originalText;
                 });
         }
+
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+            }
+        }
     </script>
     <style>
         @keyframes pulse {
@@ -83,22 +97,31 @@
         }
 
         .navbar {
-            background: white !important;
+            background: var(--nav-bg) !important;
             padding: 12px 0;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .footer {
-            background: white !important;
-            border-top: 1px solid #e2e8f0;
+            background: var(--footer-bg) !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
             margin-top: auto;
             padding: 24px 0;
+            color: rgba(255, 255, 255, 0.7) !important;
         }
 
         .navbar-brand {
             font-weight: 800;
-            color: #2563eb !important;
+            color: white !important;
             font-size: 1.5rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .nav-link:hover {
+            color: white !important;
         }
 
         .search-container {
@@ -109,16 +132,29 @@
 
         .search-input {
             border-radius: 20px 0 0 20px !important;
-            border: 1px solid #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
             padding-left: 20px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .filter-select {
             border-radius: 0 !important;
-            border: 1px solid #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-left: none;
             max-width: 130px;
-            background-color: #f8fafc;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+        }
+
+        .filter-select option {
+            background-color: #1e1b4b;
+            /* deep indigo */
+            color: white;
         }
 
         .search-btn {
@@ -128,7 +164,7 @@
 
         .hi-user {
             font-weight: 600;
-            color: #1e293b;
+            color: white;
             white-space: nowrap;
         }
 
@@ -136,7 +172,7 @@
             border: none;
             background: none;
             font-size: 1.5rem;
-            color: #475569;
+            color: white;
             padding: 5px 10px;
             transition: color 0.2s;
         }
@@ -196,15 +232,21 @@
             <a class="navbar-brand" href="{{ url_for('user.user_dashboard') }}">🛒 SmartCart</a>
 
             <!-- Search & Filter Bar (Only show if logged in) -->
-            {% if session.get('user_id') %}
+            {% if session.get('user_id') or session.get('admin_id') %}
             {% set search_action = url_for('user.user_products') %}
             {% if request.endpoint == 'user.user_dashboard' %}
             {% set search_action = url_for('user.user_dashboard') %}
+            {% elif session.get('admin_id') %}
+            {% set search_action = url_for('admin.admin_dashboard') %}
             {% endif %}
             <form action="{{ search_action }}" method="GET" class="search-container d-none d-lg-flex">
                 <div class="input-group">
-                    <input type="text" name="search" class="form-control search-input shadow-none"
-                        placeholder="Search products..." value="{{ request.args.get('search', '') }}">
+                    <input type="text" name="search" class="form-control search-input shadow-none" {% if
+                        session.get('admin_id') %} placeholder="Search admins..." name="search_admin"
+                        value="{{ request.args.get('search_admin', '') }}" {% else %} placeholder="Search products..."
+                        name="search" value="{{ request.args.get('search', '') }}" {% endif %}>
+
+                    {% if not session.get('admin_id') %}
                     <select name="category" class="form-select filter-select shadow-none">
                         <option value="">All Categories</option>
                         {% for cat in global_categories %}
@@ -212,6 +254,8 @@
                             }}</option>
                         {% endfor %}
                     </select>
+                    {% endif %}
+
                     <button class="btn btn-primary search-btn" type="submit">
                         <i class="bi bi-search"></i>
                     </button>
@@ -222,7 +266,7 @@
             <div class="d-flex align-items-center ms-auto">
                 {% if session.get('user_id') %}
                 <span class="hi-user me-3 d-none d-sm-inline">
-                    Hi, <span class="text-primary">{{ session.get('user_name') }}</span>
+                    Hi, <span class="text-warning">{{ session.get('user_name') }}</span>
                 </span>
                 {% endif %}
 
@@ -290,17 +334,33 @@
     </div>
 
     <!-- Mobile Search (Visible only on small screens and if logged in) -->
-    {% if session.get('user_id') %}
+    {% if session.get('user_id') or session.get('admin_id') %}
     <div class="container d-lg-none mt-3">
         {% set mobile_search_action = url_for('user.user_products') %}
         {% if request.endpoint == 'user.user_dashboard' %}
         {% set mobile_search_action = url_for('user.user_dashboard') %}
+        {% elif session.get('admin_id') %}
+        {% set mobile_search_action = url_for('admin.admin_dashboard') %}
         {% endif %}
         <form action="{{ mobile_search_action }}" method="GET" class="w-100">
             <div class="input-group">
-                <input type="text" name="search" class="form-control rounded-pill-start bg-light border-0 px-3"
-                    placeholder="Search..." style="border-radius: 20px 0 0 20px;"
-                    value="{{ request.args.get('search', '') }}">
+                <input type="text" name="search" class="form-control rounded-pill-start bg-light border-0 px-3" {% if
+                    session.get('admin_id') %} placeholder="Search admins..." name="search_admin"
+                    value="{{ request.args.get('search_admin', '') }}" {% else %} placeholder="Search..." name="search"
+                    value="{{ request.args.get('search', '') }}" {% endif %}
+                    style="border-radius: 20px 0 0 20px; background: rgba(255,255,255,0.1) !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;">
+
+                {% if not session.get('admin_id') %}
+                <select name="category" class="form-select bg-light border-0 px-2"
+                    style="max-width: 100px; font-size: 0.8rem; background: rgba(255,255,255,0.1) !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;">
+                    <option value="">All</option>
+                    {% for cat in global_categories %}
+                    <option value="{{ cat }}" {% if request.args.get('category')==cat %}selected{% endif %}>{{ cat }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+
                 <button class="btn btn-primary rounded-pill-end px-3" type="submit"
                     style="border-radius: 0 20px 20px 0;">
                     <i class="bi bi-search"></i>
@@ -339,7 +399,7 @@
 
     <footer class="footer">
         <div class="container text-center">
-            <p class="mb-0 text-muted small">&copy; 2026 SmartCart. All rights reserved.</p>
+            <p class="mb-0 small">&copy; 2026 SmartCart. All rights reserved.</p>
         </div>
     </footer>
 
