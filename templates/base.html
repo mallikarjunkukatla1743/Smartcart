@@ -231,8 +231,9 @@
             <!-- Brand -->
             <a class="navbar-brand" href="{{ url_for('user.user_dashboard') }}">🛒 SmartCart</a>
 
-            <!-- Search & Filter Bar (Only show if logged in) -->
-            {% if session.get('user_id') or session.get('admin_id') %}
+            <!-- Search & Filter Bar (Only show if logged in AND NOT on auth pages) -->
+            {% if (session.get('user_id') or session.get('admin_id')) and request.endpoint not in ['user.user_login',
+            'user.user_register', 'admin.admin_login', 'admin.admin_signup'] %}
             {% set search_action = url_for('user.user_products') %}
             {% if request.endpoint == 'user.user_dashboard' %}
             {% set search_action = url_for('user.user_dashboard') %}
@@ -334,7 +335,8 @@
     </div>
 
     <!-- Mobile Search (Visible only on small screens and if logged in) -->
-    {% if session.get('user_id') or session.get('admin_id') %}
+    {% if (session.get('user_id') or session.get('admin_id')) and request.endpoint not in ['user.user_login',
+    'user.user_register', 'admin.admin_login', 'admin.admin_signup'] %}
     <div class="container d-lg-none mt-3">
         {% set mobile_search_action = url_for('user.user_products') %}
         {% if request.endpoint == 'user.user_dashboard' %}
