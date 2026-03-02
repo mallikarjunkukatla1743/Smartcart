@@ -31,7 +31,7 @@ MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", os.getenv("MAIL_USERNAME"
 # Razorpay Payment 
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "").strip()
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "").strip()
-UPI_ID = os.getenv("UPI_ID", "mallikarjun@upi") # Default placeholder
+UPI_ID = os.getenv("UPI_ID", "7207511743@ybl") # Updated default
 
 
 # Configuration debug (will show in PythonAnywhere server logs)

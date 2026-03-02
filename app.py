@@ -1211,6 +1211,7 @@ def user_logout():
 # 31. Public Product View Route: Displays all products with search and filter options
 @user_bp.route('/user/products')
 def user_products():
+    if 'user_id' not in session: return redirect(url_for('user.user_login'))
     s, c = request.args.get('search', ''), request.args.get('category', '')
     conn = get_db_connection(); cursor = conn.cursor()
     q, p = "SELECT * FROM products WHERE is_active = 1", []
