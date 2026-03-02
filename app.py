@@ -1349,18 +1349,20 @@ def user_pay():
              raise ValueError("Razorpay Key ID or Secret is missing in config.")
              
         razor_order = razorpay_client.order.create({"amount": int(total * 100), "currency": "INR", "receipt": f"rcpt_{session['user_id']}_{random.randint(1000, 9999)}", "payment_capture": 1})
-        return render_template('user/payment.html', order_id=razor_order['id'], amount=total, key_id=config.RAZORPAY_KEY_ID)
+        return render_template('user/payment.html', order_id=razor_order['id'], amount=total, key_id=config.RAZORPAY_KEY_ID, upi_id=config.UPI_ID)
     except Exception as e: 
         print(f"Razorpay order Error Details: {e}")
         # Identify common errors
         err_msg = str(e)
         if "Authentication" in err_msg or "401" in err_msg:
-             flash("Razorpay authentication failed. Verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env.", "danger")
+             flash("Razorpay authentication failed. Using direct UPI backup.", "warning")
         elif "Connection" in err_msg or "Failed to connect" in err_msg:
-             flash("Connection error to Razorpay API. (Is your .env correctly configured?)", "danger")
+             flash("Razorpay connection issue. Using direct UPI backup.", "warning")
         else:
-             flash(f"Payment gateway error: {e}", "danger")
-        return redirect(url_for('user.view_cart'))
+             flash(f"Payment gateway error: {e}. Using direct UPI backup.", "warning")
+        
+        # Fallback to direct payment if Razorpay fails
+        return render_template('user/payment.html', order_id="MANUAL", amount=total, key_id=None, upi_id=config.UPI_ID)
 
 def _create_order_in_db(uid, cart, payment_status, razor_oid, razor_pid=None):
     conn = get_db_connection()
@@ -1427,6 +1429,23 @@ def my_orders():
     conn = get_db_connection(); cursor = conn.cursor()
     cursor.execute("SELECT * FROM orders WHERE user_id = ?", (session['user_id'],))
     orders = cursor.fetchall(); cursor.close(); conn.close(); return render_template('user/my_orders.html', orders=orders)
+
+# 46b. Manual QR Confirmation: Processes orders paid via static QR code
+@user_bp.route('/user/confirm-qr-payment', methods=['POST'])
+def confirm_qr_payment():
+    if 'user_id' not in session or 'cart' not in session: return redirect(url_for('user.user_login'))
+    
+    utr_id = request.form.get('utr_id', 'N/A')
+    try:
+        # Create order in DB with 'Pending Verification' status
+        oid = _create_order_in_db(session['user_id'], session['cart'], f'Paid (UTR: {utr_id})', 'MANUAL', 'MANUAL')
+        send_order_email(oid)
+        flash("Payment submitted! Your order will be processed after verification.", "success")
+        return redirect(url_for('user.order_success', order_db_id=oid))
+    except Exception as e:
+        print(f"QR Confirmation Error: {e}")
+        flash("Failed to record order. Please contact support.", "danger")
+        return redirect(url_for('user.view_cart'))
 
 # 47. Invoice PDF Route: Generates and triggers download of a custom-styled PDF receipt
 @user_bp.route('/user/download_invoice/<int:order_id>')

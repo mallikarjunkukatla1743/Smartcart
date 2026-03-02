@@ -31,6 +31,8 @@ MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", os.getenv("MAIL_USERNAME"
 # Razorpay Payment 
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "").strip()
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "").strip()
+UPI_ID = os.getenv("UPI_ID", "mallikarjun@upi") # Default placeholder
+
 
 # Configuration debug (will show in PythonAnywhere server logs)
 print(f"DEBUG: DATABASE_URL is set to {DATABASE_URL}")

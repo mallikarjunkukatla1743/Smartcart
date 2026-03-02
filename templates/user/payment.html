@@ -15,42 +15,75 @@
                     <h5 class="text-muted mb-1">Total Payable Amount</h5>
                     <h1 class="display-4 fw-800 text-dark mb-4">₹{{ '{:,.2f}'.format(amount) }}</h1>
 
-                    <div class="alert alert-light border-0 bg-light rounded-4 p-3 mb-4 text-start">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
-                            <span class="fw-bold">Order Verification</span>
+                    <div class="row g-4">
+                        {% if key_id %}
+                        <!-- Razorpay Section -->
+                        <div class="col-md-6 border-end">
+                            <div class="p-3">
+                                <h6 class="fw-bold mb-3"><i class="bi bi-credit-card me-2"></i>Option 1: Razorpay</h6>
+                                <p class="small text-muted">Pay using Card, Netbanking, or Wallet.</p>
+                                <button id="rzp-button" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">
+                                    Pay with Razorpay
+                                </button>
+                            </div>
                         </div>
-                        <p class="small text-muted mb-0">Please do not refresh this page or press back until the payment
-                            is complete.</p>
+                        {% endif %}
+
+                        <!-- Direct UPI QR Section -->
+                        <div class="{% if key_id %}col-md-6{% else %}col-12{% endif %}">
+                            <div class="p-3">
+                                <h6 class="fw-bold mb-3"><i class="bi bi-qr-code-scan me-2"></i>Option 2: Scan & Pay
+                                    (UPI)</h6>
+
+                                <div class="bg-white p-2 border rounded-4 mb-3 d-inline-block shadow-sm">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi%3A%2F%2Fpay%3Fpa%3D{{ upi_id }}%26pn%3DSmartCart%26am%3D{{ amount }}%26cu%3DINR"
+                                        alt="Payment QR" class="img-fluid" style="width: 180px;">
+                                </div>
+                                <p class="small fw-bold mb-1">UPI ID: <span class="text-primary">{{ upi_id }}</span></p>
+                                <p class="extra-small text-muted mb-3">Scan this QR with GPay, PhonePe, or Paytm</p>
+
+                                <button class="btn btn-success w-100 rounded-pill py-2 fw-bold"
+                                    data-bs-toggle="collapse" data-bs-target="#confirmManual">
+                                    Paid? Click here
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Real Razorpay UI -->
-                    <button id="rzp-button"
-                        class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-green mb-3">
-                        Pay with Razorpay <i class="bi bi-credit-card-2-front ms-2"></i>
-                    </button>
+                    <!-- Manual Confirmation Form -->
+                    <div class="collapse mt-4" id="confirmManual">
+                        <div class="card card-body bg-light border-0 rounded-4 text-start">
+                            <h6 class="fw-bold"><i class="bi bi-check2-circle me-1"></i> Confirm Payment</h6>
+                            <p class="small text-muted">Enter the 12-digit Transaction ID (UTR) from your UPI app.</p>
+                            <form action="{{ url_for('user.confirm_qr_payment') }}" method="POST">
+                                <div class="mb-3">
+                                    <input type="text" name="utr_id" class="form-control rounded-3"
+                                        placeholder="Enter Transaction ID / UTR" required>
+                                </div>
+                                <button type="submit" class="btn btn-dark w-100 rounded-3 fw-bold">Submit for
+                                    Verification</button>
+                            </form>
+                        </div>
+                    </div>
 
                     <div class="mt-4 pt-4 border-top">
                         <div class="d-flex justify-content-center gap-4 text-muted grayscale opacity-50">
-                            <i class="bi bi-visa fs-3"></i>
-                            <i class="bi bi-credit-card-2-back fs-3"></i>
-                            <i class="bi bi-bank fs-3"></i>
+                            <i class="bi bi-shield-lock fs-5"></i>
+                            <span class="small">Secure 256-bit SSL Payment</span>
                         </div>
-                        <p class="small text-muted mt-3 mb-0">100% Encrypted & Secure Payments</p>
                     </div>
                 </div>
             </div>
 
-            <div class="text-center mt-4">
-                <a href="/user/cart" class="text-decoration-none text-muted small fw-bold">
-                    <i class="bi bi-arrow-left me-1"></i> Return to Cart
-                </a>
+            <div class="text-center mt-4 text-muted">
+                <p class="small mb-0">Order ID: <span class="fw-bold">{{ order_id }}</span></p>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Razorpay Checkout Script -->
+{% if key_id %}
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     var options = {
@@ -77,25 +110,6 @@
             document.body.appendChild(form);
             form.submit();
         },
-        "config": {
-            "display": {
-                "blocks": {
-                    "upi": {
-                        "name": "Pay via UPI / QR",
-                        "instruments": [
-                            {
-                                "method": "upi",
-                                "apps": ["google_pay", "phonepe", "paytm"]
-                            }
-                        ]
-                    }
-                },
-                "sequence": ["block.upi"],
-                "preferences": {
-                    "show_default_blocks": true
-                }
-            }
-        },
         "theme": { "color": "#0d6efd" }
     };
     var rzp = new Razorpay(options);
@@ -103,6 +117,8 @@
         rzp.open(); e.preventDefault();
     };
 </script>
+{% endif %}
+
 
 <style>
     .fw-800 {
