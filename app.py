@@ -443,7 +443,7 @@ def admin_signup():
         flash("OTP sent to your email successfully!", "success")
     else:
         # Error or PythonAnywhere block
-        flash("OTP sent successfully! (Please check your inbox or server logs)", "success")
+        flash("Email sending failed. Please check your inbox or server logs for the OTP.", "warning")
     
     return redirect(url_for('admin.verify_otp_get'))
 
@@ -1014,7 +1014,7 @@ def admin_forgot_password():
             if success:
                 flash("OTP sent to your email!", "success")
             else:
-                flash("OTP sent to your email successfully! Please check your inbox.", "success")
+                flash("Email sending failed. Please check your inbox or server logs for the OTP.", "warning")
             return redirect(url_for('admin.verify_forgot_otp'))
         else:
             flash("If that email exists in our system, you will receive an OTP.", "info")
@@ -1082,7 +1082,7 @@ def user_register():
     if success:
         flash("Verification code sent to your email!", "info")
     else:
-        flash("Verification code sent to your email successfully!", "info")
+        flash("Email sending failed. Please check your inbox or server logs for the code.", "danger")
     return redirect(url_for('user.user_verify_register_otp'))
 
 # 24b. User Verify OTP Route: Validates the registration code and creates the user account
@@ -1157,7 +1157,7 @@ def forgot_password():
             if success:
                 flash("OTP sent to your email!", "success")
             else:
-                flash("OTP sent successfully! Please check your email.", "success")
+                flash("Email sending failed. Please check your inbox or server logs for the code.", "danger")
             return redirect(url_for('user.verify_otp_reset'))
         else:
             flash("If your email is registered, you will receive an OTP code.", "info")
@@ -1344,11 +1344,22 @@ def user_pay():
     cursor.execute(f"SELECT * FROM products WHERE product_id IN ({placeholders})", list(cart.keys()))
     products = cursor.fetchall(); cursor.close(); conn.close(); total = sum(p['price'] * cart[str(p['product_id'])] for p in products)
     try:
+        # Debugging: check credentials presence
+        if not config.RAZORPAY_KEY_ID or not config.RAZORPAY_KEY_SECRET:
+             raise ValueError("Razorpay Key ID or Secret is missing in config.")
+             
         razor_order = razorpay_client.order.create({"amount": int(total * 100), "currency": "INR", "receipt": f"rcpt_{session['user_id']}_{random.randint(1000, 9999)}", "payment_capture": 1})
         return render_template('user/payment.html', order_id=razor_order['id'], amount=total, key_id=config.RAZORPAY_KEY_ID)
     except Exception as e: 
-        print(f"Razorpay order Error: {e}")
-        flash(f"Payment gateway error. Please try again later. (Is your .env correctly configured?)", "danger")
+        print(f"Razorpay order Error Details: {e}")
+        # Identify common errors
+        err_msg = str(e)
+        if "Authentication" in err_msg or "401" in err_msg:
+             flash("Razorpay authentication failed. Verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env.", "danger")
+        elif "Connection" in err_msg or "Failed to connect" in err_msg:
+             flash("Connection error to Razorpay API. (Is your .env correctly configured?)", "danger")
+        else:
+             flash(f"Payment gateway error: {e}", "danger")
         return redirect(url_for('user.view_cart'))
 
 def _create_order_in_db(uid, cart, payment_status, razor_oid, razor_pid=None):
